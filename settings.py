@@ -1,6 +1,5 @@
 config = {
 
-    # Описание любого непонятного пункта в конфиге есть в README Pepega
     'token': 'ODQyNDgzNDQ0MzMxOTcwNTYw.YJ192Q.VNDPsianrDhpfE73s_itlasV45s',
     'prefix': '!',
     'activity': 'Plasmo MKO by howkawgew',
@@ -25,7 +24,7 @@ config = {
     'publicLogs': 842484261180669962,  # Parliament join/leave
     'roflanEbaloLogs': 843164835122511872,  # Vote rejected
 
-    'dynamic_votes': False,
+    'dynamic_votes': False,  # Удалил потому что сроки поджимают peepoClown
     'dynamic_votes_max': 20,
 
     'votes_to_member': 3,  # Нужно голосов чтобы стать parliament_member
@@ -38,18 +37,17 @@ config = {
     # 24 часа -> 86400
     # 2 дня -> 172800
 
-    'vote_top_len': 15,
+    'vote_top_len': 3,
 
-    'reaction_previous': '→',
-    'reaction_reload': '→',
-    'reaction_next': '→',
+    'reaction_previous': '👈🏿',
+    'reaction_reload': '',
+    'reaction_next': '👉🏿',
 
     'vote_top_cooldown': 10,
 
 }
 
 texts = {
-    # Описание любого непонятного пункта в конфиге есть в README Pepega
 
     'voted_title': 'Голос засчитан',
     'voted_desk': '{player1} проголосовал за {player2}',
@@ -71,18 +69,16 @@ texts = {
     'removed_pmember_desk': '{player1} потерял голоса нужные для участия в совете',
     'removed_pmember_color': 0xFF0000,
 
-    'rejected_vote_title': 'Ваш голос обнулен',
+    'rejected_vote_title': 'Ваш голос аннулирован',
     'rejected_vote_desk': 'Чтобы голосовать нужно наиграть хотя бы {hours} часов за неделю',
-    'rejected_vote_color': 0x000000,
+    'rejected_vote_color': 0xFF0000,
 
     'rcd_title': 'Кулдаун обнулен',
-    'rcd_desk': 'Кулдаун у {player} обнулен',
+    'rcd_desk': 'Кулдаун у {player} сброшен',
     'rcd_color': 0x00FF00,
 
     'vote_top_title': 'Топ игроков по голосам',
     'err_color': 0x00FF00,
-
-
 
 }
 
@@ -120,10 +116,9 @@ errors = {
     'rcd NoCooldown': 'У игрока нет кулдауна, ты дурак?',
     'rcd BadArgument': 'Че нахуй? что это значит вообще? Pepega',
 
-    'vote-info BadArgument': 'Нет такого игрока pepeLaugh',
-
+    'vote-info BadArgument': 'Нет такого игрока :pepeLaugh:',
     'vote-top DatabaseCleared': 'В базе данных... 0 строк?',
-    'vote-top MissingRole': 'Ты даже не игрок KEKW',
-    'vote-top CommandOnCooldown': 'Кулдаун peepoSad',
+    'vote-top MissingRole': 'Ты даже не игрок',
+    'vote-top CommandOnCooldown': 'Кулдаун',
 
 }

@@ -9,13 +9,16 @@ import time
 
 intents = discord.Intents.default()
 intents.members = True
+intents.reactions = True
+intents.guild_reactions = True
 bot = commands.Bot(command_prefix=config['prefix'], intents=intents)
 bot.remove_command('help')
 
 
 def autoUpdater(sched):
-    sched.add_job(update_members, CronTrigger(hour=12))
-    #sched.add_job(update_tops, CronTrigger(minute=30))
+    sched.add_job(update_voters, CronTrigger(hour=11, minute=11))
+    sched.add_job(update_members, CronTrigger(hour=0, minute=0))
+    sched.add_job(update_all_tops, CronTrigger(minute=0))
 
 
 # запрос к бд - получение количества часов за неделю
@@ -57,7 +60,6 @@ def get_votes(discord_id, return_users=False):
 def get_player_by_str(ctx, player):
     try:
         if '<@' in player and '>' in player:
-            print(int(player[(3 if '!' in player else 2):-1]))
             return ctx.guild.get_member(int(player[(3 if '!' in player else 2):-1]))
         else:
             member = utils.get(ctx.guild.members, nick=player)
@@ -85,7 +87,7 @@ def channel_check(ctx):
         return False
 
 
-# Логгер Kappa, логирует почти все успешные выводы комманд
+# Логгер Kappa, логирует почти все успешные выводы команд
 async def logger(ctx=None, type=None, player1=None, player2=None):
     if type == 'voted':
         embed = discord.Embed(title=texts['voted_title'],
@@ -117,7 +119,7 @@ async def logger(ctx=None, type=None, player1=None, player2=None):
                               colour=texts['removed_pmember_color'])
         embed.set_thumbnail(url=f'https://rp.plo.su/avatar/{player1.display_name}')
         await pLogs.send(f'{player1.mention}', embed=embed)
-    elif type == 'rejected_vote':
+    elif type == 'voice_rejected':
         embed = discord.Embed(title=texts['rejected_vote_title'],
                               description=texts['rejected_vote_desk'].format(hours=config['hours_to_vote']),
                               colour=texts['rejected_vote_color'])
@@ -133,19 +135,86 @@ async def logger(ctx=None, type=None, player1=None, player2=None):
 
 # Возвращает двумерный массив в формате [кол-во голосов, айди]
 def top():
-    voted_users = db.select(columns='DISTINCT voted_user', return_list=True)
-    users = []
-    for user in voted_users:
-        users.append([get_votes(user), int(user)])
-    if len(users) == 0:
-        return users
-    users.sort(key=lambda x: x[0], reverse=True)
-    return users
+    voted_users = db.select(columns='voted_user, COUNT(*) as votes', args='GROUP BY voted_user', return_matrix=True)
+    if len(voted_users) == 0:
+        return []
+    voted_users.sort(key=lambda x: x[0], reverse=True)
+    return voted_users
 
 
-# не работает. обновляет все топи
-async def update_tops():
-    print('pepega tops')
+async def init_top(message):
+    global top_messages, top_messages_ids
+    top_messages.append([message, 1, time.time_ns()])
+    top_messages_ids.append(message.id)
+
+
+async def update_top(topi):
+    message = topi[0]
+    top_time = topi[2]
+    if time.time_ns() - top_time >= 1500:
+        await message.delete()
+        return True
+    return False
+
+
+async def move_top(top_name, right: bool):
+    global top_messages
+    top_msg = ''
+    for topi in top_messages:
+        if topi[0].id != top_name:
+            pass
+        else:
+            top_msg = topi
+            break
+    if top_msg[1] == 1 and not right:
+        return None
+
+    top_list = top()
+    top_list_num = top_msg[1]
+    if right:
+        top_list_num += 1
+    else:
+        top_list_num -= 1
+    vt_len = config['vote_top_len']
+
+    diff = 0
+    if len(top_list) == 0:
+        embed = discord.Embed(title=errors['err_title'],
+                              description=errors['vote-top DatabaseCleared'],
+                              colour=errors['err_colour'])
+        await top_msg[0].edit(embed=embed)
+        return None
+    elif (top_list_num * vt_len) > len(top_list) > (top_list_num * (vt_len - 1)):
+        diff = (top_list_num * vt_len) - len(top_list)
+    elif len(top_list) >= (top_list_num * vt_len):
+        pass
+    else:
+        return None
+
+    num = ((top_list_num - 1) * vt_len) + 1
+
+    embed = discord.Embed(title=texts['vote_top_title'], colour=texts['err_color'])
+    for place in range(vt_len - diff):
+        user = top_list[num - 1]
+        name = f'{num}. {Pguild.get_member(user[1]).display_name} {config["votes_emoji"] if user[0] >= config["votes_to_member"] else ""}'
+        votes = user[0]
+        value = f'{votes} голос'
+        if str(votes)[-1:] in ["5", "6", "7", "8", "9"]:
+            value += "oв"
+        elif str(votes)[-1:] in ["2", "3", "4"]:
+            value += 'а'
+        num += 1
+        embed.add_field(name=name, value=value, inline=True)
+
+    top_messages[top_messages.index(top_msg)][1] = top_list_num
+    await top_msg[0].edit(embed=embed)
+
+
+async def update_all_tops():
+    global top_messages
+    for top in top_messages:
+        if await update_top(top):
+            del top_messages[top_messages.index(top)]
 
 
 # обновление членства в совете
@@ -167,6 +236,19 @@ async def update_members():
     users = db.select(columns='DISTINCT voted_user', return_list=True)
     for user in users:
         await update_member(Pguild.get_member(int(user)))
+
+
+# проверка голоса на истечение
+async def update_voters():
+    users = db.select(columns='DISTINCT discord_id', return_list=True)
+    for user in users:
+        member = Pguild.get_member(int(user))
+        hours_check = True if get_played_hours(member.id) >= config['hours_to_vote'] else False
+        if not hours_check:
+            await logger(type='voice_rejected', player1=member)
+            user_to_update = int(db.select(columns='discord_id', where=f'discord_id = {member.id}')[0])
+            await update_member(Pguild.get_member(user_to_update))  # Можно убрать чтобы не перегружать бд, но мне похуй
+            db.delete(where=f'discord_id = {member.id}')
 
 
 @bot.command()
@@ -368,9 +450,6 @@ async def fvote(ctx, player1, player2):
     AV = False
     vote = db.select(columns='voted_user, last_vote_timestamp', where=f'discord_id = {player1.id}')
     if vote is not None:
-        if vote[1] + config['vote_cooldown'] > time.time():
-            # кд
-            return False
         if int(vote[0]) == player2.id:
             await fvote_error(ctx, 'AlreadyVoted', dolbaeb=player2, author=player1)
             return False
@@ -468,7 +547,6 @@ async def vote_info(ctx, player=None):
     await ctx.send(f'{ctx.author.mention}', embed=embed)
 
 
-
 @vote_info.error
 async def vote_info_error(ctx, error):
     if not channel_check(ctx):
@@ -501,7 +579,6 @@ async def vote_rcd(ctx, player='хуй'):
             await vote_rcd_error(ctx, 'NoCooldown')
             return False
         db.update(where=f'discord_id={player.id}', data='last_vote_timestamp=0')
-        print(vote)
 
     else:
         await vote_rcd_error(ctx, 'NoCooldown')
@@ -540,7 +617,6 @@ async def vote_rcd_error(ctx, error):
         await ctx.send(error)
 
 
-# TODO: !vote-top
 @bot.command(name='vote-top')
 @commands.has_role(config['player'])
 @commands.cooldown(rate=1, per=config['vote_top_cooldown'], type=commands.BucketType.user)
@@ -551,7 +627,7 @@ async def vote_top(ctx):
     top_list = top()
     vt_len = config['vote_top_len']
 
-    if len(top()) == 0:
+    if len(top_list) == 0:
         await vote_top_error(ctx, 'DatabaseCleared')
         return None
 
@@ -559,8 +635,8 @@ async def vote_top(ctx):
     num = 1
     for user in top_list:
         if num <= vt_len:
-            name = f'{num}. {Pguild.get_member(user[1]).display_name} {config["votes_emoji"] if get_votes(user[1]) >= config["votes_to_member"] else ""}'
-            votes = get_votes(user[1])
+            name = f'{num}. {Pguild.get_member(user[1]).display_name} {config["votes_emoji"] if user[0] >= config["votes_to_member"] else ""}'
+            votes = user[0]
             value = f'{votes} голос'
             if str(votes)[-1:] in ["5", "6", "7", "8", "9"]:
                 value += "oв"
@@ -569,11 +645,13 @@ async def vote_top(ctx):
 
             embed.add_field(name=name, value=value, inline=True)
         num += 1
-    message = await ctx.send(f'{ctx.author.mention}', embed=embed)
-    #rn = bot.get_emoji(config['reaction_next'])
-    #await message.add_reaction(rn)
-    #await message.add_reaction(bot.get_emoji(config['reaction_reload']))
-    #await message.add_reaction(bot.get_emoji(config['reaction_previous']))
+
+    global top_messages
+    message = await ctx.send(f'{ctx.author.mention}', embed=embed, delete_after=3600)
+    pass
+    await message.add_reaction(config['reaction_previous'])
+    await message.add_reaction(config['reaction_next'])
+    await init_top(message)
 
 
 @vote_top.error
@@ -598,23 +676,54 @@ async def vote_top_error(ctx, error):
 
 
 @bot.event
+async def on_reaction_add(reaction: discord.Reaction, user: discord.User) -> None:
+    emoji = str(reaction.emoji)
+    if (emoji == '👈🏿' or emoji == '👉🏿') and not user.bot:
+        print(user.bot)
+        if reaction.message.id in top_messages_ids:
+            if emoji == '👈🏿':
+                await move_top(top_name=reaction.message.id, right=False)
+                await reaction.remove(user)
+            else:
+                await move_top(top_name=reaction.message.id, right=True)
+                await reaction.remove(user)
+
+
+'''@bot.event
+async def on_reaction_remove(reaction: discord.Reaction, user: discord.User) -> None:
+    emoji = str(reaction.emoji)
+    if (emoji == '👈🏿' or emoji == '👉🏿') and not user.bot:
+
+        if reaction.message.id in top_messages_ids:
+            if emoji == '👈🏿':
+                await move_top(top_name=reaction.message.id, right=False)
+            else:
+                await move_top(top_name=reaction.message.id, right=True)
+'''
+
+@bot.event
 async def on_ready():
     await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Game(config['activity']))
 
-    global Pguild, player_role, member_role, aLogs, pLogs, member_role
+    global Pguild, player_role, member_role, aLogs, pLogs, member_role, top_messages, top_messages_ids
     Pguild = bot.get_guild(config['guild_id'])
     player_role = Pguild.get_role(config['player'])
     member_role = Pguild.get_role(config['parliament_member_role'])
     pLogs = bot.get_channel(config['publicLogs'])
     aLogs = bot.get_channel(config['roflanEbaloLogs'])
     member_role = Pguild.get_role(config['parliament_member_role'])
+    top_messages = []
+    top_messages_ids = []
+
     scheduler = AsyncIOScheduler()
     autoUpdater(scheduler)
     scheduler.start()
 
     print('Connected...')
     await update_members()
+    await update_voters()
 
 
 if __name__ == '__main__':
+    print('Init....')
     bot.run(config['token'])
