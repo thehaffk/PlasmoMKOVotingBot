@@ -17,7 +17,7 @@ bot.remove_command('help')
 
 def autoUpdater(sched):
     sched.add_job(update_voters, CronTrigger(hour=11, minute=11))
-    sched.add_job(update_members, CronTrigger(hour=0, minute=0))
+    sched.add_job(update_members, CronTrigger(hour=11, minute=22))
     sched.add_job(update_all_tops, CronTrigger(minute=0))
 
 
