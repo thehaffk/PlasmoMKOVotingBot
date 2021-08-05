@@ -95,6 +95,7 @@ def channel_check(ctx):
 
 
 # Логгер Kappa, логирует почти все успешные выводы команд
+# пиздец (C) Apehum
 async def logger(ctx=None, type=None, player1=None, player2=None):
     if type == 'voted':
         embed = discord.Embed(title=texts['voted_title'],
@@ -153,7 +154,6 @@ async def init_top(message):
     global top_messages, top_messages_ids
     top_messages.append([message, 1, time.time_ns()])
     top_messages_ids.append(message.id)
-    print(top_messages, top_messages_ids)
 
 
 async def update_top(topi):
@@ -166,7 +166,6 @@ async def update_top(topi):
 
 
 async def move_top(top_to_move, right: bool):
-    print('move top', top_to_move, right)
     global top_messages
     top_msg = ''
     for topi in top_messages:
@@ -241,7 +240,6 @@ async def update_member(member):
 # обновление членства в совете у всех игроков
 async def update_members():
     users = db.select(columns='DISTINCT voted_user', return_list=True)
-    print(users)
     for user_id in users:
         user = Pguild.get_member(int(user_id))
         if user:
@@ -257,13 +255,12 @@ async def update_voters():
         member = Pguild.get_member(int(user))
         if member:
             hours = get_played_hours(member.id)
-            if hours is not None:
-                if not hours >= config['hours_to_vote']:
-                    await logger(type='voice_rejected', player1=member)
-                    user_to_update = int(db.select(columns='discord_id', where=f'discord_id = {member.id}')[0])
-                    await update_member(
-                        Pguild.get_member(user_to_update))  # Можно убрать чтобы не перегружать бд, но мне похуй
-                    db.delete(where=f'discord_id = {member.id}')
+            if hours is not None and not hours >= config['hours_to_vote']:
+                await logger(type='voice_rejected', player1=member)
+                user_to_update = int(db.select(columns='discord_id', where=f'discord_id = {member.id}')[0])
+                await update_member(
+                    Pguild.get_member(user_to_update))  # Можно убрать чтобы не перегружать бд, но мне похуй
+                db.delete(where=f'discord_id = {member.id}')
         else:
             print('User Not Found -', user)
 
@@ -299,7 +296,8 @@ async def vote(ctx, player):
         await vote_error(ctx, error='SelfVoting')
         return None
 
-    if get_played_hours(ctx.author.id) < config['hours_to_vote']:
+    hours = get_played_hours(ctx.author.id)
+    if hours is not None and hours < config['hours_to_vote']:
         await vote_error(ctx, error='TooFewHours')
         return None
 
@@ -402,11 +400,8 @@ async def vote_error(ctx, error, player=None):
 async def unvote(ctx: SlashContext, player=None):
     if not channel_check(ctx):
         return 'Pepega'
-    if config['private_voting'] and not fvote_role in ctx.author.roles:
+    if config['private_voting'] and fvote_role not in ctx.author.roles:
         return False
-    if player == ctx.author:
-        await vote_error(ctx, error='SelfVoting')
-        return None
 
     if ctx.author.guild.get_role(config['fvote_role']) in ctx.author.roles and player is not None:
         if not isinstance(player, discord.Member):
@@ -442,25 +437,16 @@ async def unvote_error(ctx, error, player=None):
         return 'Pepega'
     if config['private_voting'] and not fvote_role in ctx.author.roles:
         return False
-    if error == 'NoSuchVote':
-        embed = discord.Embed(title=errors['err_title'],
-                              description=errors['Unvote NoSuchVote'].format(player=player.mention),
-                              colour=errors['err_colour'])
-        await ctx.send(ctx.author.mention, embed=embed)
-    elif error == 'Dolbaeb':
-        embed = discord.Embed(title=errors['err_title'],
-                              description=errors['Unvote Dolbaeb'],
-                              colour=errors['err_colour'])
-        await ctx.send(ctx.author.mention, embed=embed)
-    elif error == 'Cooldown':
-        embed = discord.Embed(title=errors['err_title'],
-                              description=errors['Unvote Cooldown'],
-                              colour=errors['err_colour'])
-        await ctx.send(ctx.author.mention, embed=embed)
-    elif error == 'BadArgument':
-        embed = discord.Embed(title=errors['err_title'],
-                              description=errors['Unvote BadArgument'],
-                              colour=errors['err_colour'])
+
+    if f'Unvote {error}' in errors:
+        if player is None:
+            embed = discord.Embed(title=errors['err_title'],
+                                  description=errors[f'Unvote {error}'],
+                                  colour=errors['err_colour'])
+        else:
+            embed = discord.Embed(title=errors['err_title'],
+                                  description=errors[f'Unvote {error}'].format(player=player.mention),
+                                  colour=errors['err_colour'])
         await ctx.send(ctx.author.mention, embed=embed)
     else:
         await ctx.send(error)
@@ -505,7 +491,8 @@ async def fvote(ctx, player1, player2):
                               colour=errors['err_colour'])
         await ctx.send(f'{ctx.author.mention}', embed=embed)
         return None
-    if get_played_hours(player1.id) < config['hours_to_vote']:
+    hours = get_played_hours(player1.id)
+    if hours is not None and hours < config['hours_to_vote']:
         embed = discord.Embed(title=errors['err_title'],
                               description=errors['Fvote TooFewHours'].format(player1=player1.mention,
                                                                              hours=config['hours_to_vote']),
@@ -532,7 +519,6 @@ async def fvote(ctx, player1, player2):
             data=f'id=NULL, discord_id={player1.id},voted_user={player2.id}, last_vote_timestamp={int(time.time())}')
 
     if av:
-        print('kofe', db_vote)
         await update_member(Pguild.get_member(int(db_vote[0])))
     await update_member(player2)
     await logger(ctx, type='fvoted', player1=player1, player2=player2)
@@ -673,8 +659,6 @@ async def vote_top(ctx):
     await message.add_reaction(config['reaction_previous'])
     await message.add_reaction(config['reaction_next'])
     await init_top(message)
-    print(top_messages, top_messages_ids)
-
 
 
 async def vote_top_error(ctx, error):
