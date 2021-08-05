@@ -31,11 +31,16 @@ def get_played_hours(discord_id, in_seconds=False):
         return 0
     else:
         uuid = uuid[0]
+
+    if type(uuid) is tuple:
+        uuid = uuid[0]
+
     uuid = (uuid[0:8] + '-' + uuid[8:12] + '-' + uuid[12:16] + '-' + uuid[16:20] + '-' + uuid[20:])
-    seconds = db.select(table='stats_month', columns='SUM(played)', where=f'uuid = "{uuid}" AND date >= (CURDATE()-7)')[
+    seconds = db.select(table='stats_month', columns='(CASE WHEN SUM(played) IS NULL THEN 0 ELSE SUM(played) END)',
+                        where=f'uuid = "{uuid}" AND date >= CURRENT_DATE - INTERVAL 7 DAY')[
         0]
-    if not seconds:
-        return 0
+    if seconds is None:
+        return None
     if in_seconds:
         return seconds
     else:
@@ -251,12 +256,14 @@ async def update_voters():
     for user in users:
         member = Pguild.get_member(int(user))
         if member:
-            if not get_played_hours(member.id) >= config['hours_to_vote']:
-                await logger(type='voice_rejected', player1=member)
-                user_to_update = int(db.select(columns='discord_id', where=f'discord_id = {member.id}')[0])
-                await update_member(
-                    Pguild.get_member(user_to_update))  # Можно убрать чтобы не перегружать бд, но мне похуй
-                db.delete(where=f'discord_id = {member.id}')
+            hours = get_played_hours(member.id)
+            if hours is not None:
+                if not hours >= config['hours_to_vote']:
+                    await logger(type='voice_rejected', player1=member)
+                    user_to_update = int(db.select(columns='discord_id', where=f'discord_id = {member.id}')[0])
+                    await update_member(
+                        Pguild.get_member(user_to_update))  # Можно убрать чтобы не перегружать бд, но мне похуй
+                    db.delete(where=f'discord_id = {member.id}')
         else:
             print('User Not Found -', user)
 
