@@ -40,9 +40,8 @@ def recon():
 recon()
 
 
-def requestdb(request: str):
+def requestdb(request: str, retry=False):
     try:
-
         cur = conn.cursor(buffered=True)
         cur.execute(request)
         cur.close()
@@ -55,11 +54,14 @@ def requestdb(request: str):
     except Exception as err:
         print(err)
         recon()
-        return None
+        if not retry:
+            return requestdb(request, retry=True)
+        else:
+            return None
 
 
 def select(table='parliament_votes', columns='*', where='', args='', always_return_all=False, return_list=False,
-           return_matrix=False):
+           return_matrix=False, retry=False):
     try:
         if where != '':
             where = 'WHERE ' + where
@@ -96,10 +98,20 @@ def select(table='parliament_votes', columns='*', where='', args='', always_retu
     except Exception as err:
         print(err)
         recon()
-        return None
+        if not retry:
+            return select(table=table,
+                          columns=columns,
+                          where=where,
+                          args=args,
+                          always_return_all=always_return_all,
+                          return_list=return_list,
+                          return_matrix=return_matrix,
+                          retry=True)
+        else:
+            return None
 
 
-def insert(data, table='parliament_votes'):
+def insert(data, table='parliament_votes', retry=False):
     try:
         request = f'INSERT INTO {table} SET {data}'
         if debug:
@@ -112,9 +124,13 @@ def insert(data, table='parliament_votes'):
     except Exception as err:
         print(err)
         recon()
+        if not retry:
+            return insert(data=data, table=table, retry=True)
+        else:
+            return None
 
 
-def delete(where, table='parliament_votes'):
+def delete(where, table='parliament_votes', retry=False):
     try:
         request = f'DELETE FROM {str(table)} WHERE {str(where)}'
         if debug:
@@ -126,9 +142,13 @@ def delete(where, table='parliament_votes'):
     except Exception as err:
         print(err)
         recon()
+        if not retry:
+            return delete(where=where, table=table, retry=True)
+        else:
+            return None
 
 
-def update(data, where, table='parliament_votes'):
+def update(data, where, table='parliament_votes', retry=False):
     try:
         request = f'UPDATE {table} SET {data} WHERE {where}'
         if debug:
@@ -140,3 +160,7 @@ def update(data, where, table='parliament_votes'):
     except Exception as err:
         print(err)
         recon()
+        if not retry:
+            return update(data=data, where=where, table=table, retry=True)
+        else:
+            return None
