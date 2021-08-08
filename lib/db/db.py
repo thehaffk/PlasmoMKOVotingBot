@@ -6,7 +6,7 @@ PORT = 3306
 USER = 'pepega'
 PASSWORD = 'hRLxsXQwk0REGuf2'
 DATABASE = 'plasmo_rp'
-debug = False
+debug = True
 
 '''conn = pymysql.connect(host=HOST,
                        port=PORT,
@@ -31,10 +31,32 @@ def create_connection(host_name, user_name, user_password):
         print(f"The error '{e}' occurred")
     return connection
 
+
 def recon():
     global conn
     conn = create_connection(HOST, USER, PASSWORD)
+
+
 recon()
+
+
+def requestdb(request: str):
+    try:
+
+        cur = conn.cursor(buffered=True)
+        cur.execute(request)
+        cur.close()
+        resp = cur.fetchall()
+        if debug:
+            print(request, resp)
+        return resp
+    except IndexError:
+        return None
+    except Exception as err:
+        print(err)
+        recon()
+        return None
+
 
 def select(table='parliament_votes', columns='*', where='', args='', always_return_all=False, return_list=False,
            return_matrix=False):
@@ -45,7 +67,7 @@ def select(table='parliament_votes', columns='*', where='', args='', always_retu
         if debug:
             print(request)
         cur = conn.cursor(buffered=True)
-        response = cur.execute(request)
+        cur.execute(request)
         fetchall = cur.fetchall()
         cur.close()
 

@@ -1,6 +1,5 @@
 from lib.db import db
 import discord
-from discord import utils
 from discord.ext import commands
 from settings import config, texts, errors
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -26,19 +25,18 @@ def autoUpdater(sched):
 
 # запрос к бд - получение количества часов за неделю
 def get_played_hours(discord_id, in_seconds=False):
-    uuid = db.select(table="users", columns="uuid", where=f"discord_id = {discord_id}")
+    uuid = db.requestdb(f'SELECT uuid FROM users WHERE discord_id = {discord_id}')
     if uuid is None or not len(uuid):
         return 0
     else:
         uuid = uuid[0]
 
-    if type(uuid) is tuple:
+    if type(uuid) is tuple or uuid is not str:
         uuid = uuid[0]
 
     uuid = (uuid[0:8] + '-' + uuid[8:12] + '-' + uuid[12:16] + '-' + uuid[16:20] + '-' + uuid[20:])
-    seconds = db.select(table='stats_month', columns='(CASE WHEN SUM(played) IS NULL THEN 0 ELSE SUM(played) END)',
-                        where=f'uuid = "{uuid}" AND date >= CURRENT_DATE - INTERVAL 7 DAY')[
-        0]
+    seconds = db.requestdb(f'SELECT (CASE WHEN SUM(played) IS NULL THEN 0 ELSE SUM(played) END) FROM stats_month '
+                           f'WHERE uuid = "{uuid}" AND date >= CURRENT_DATE - INTERVAL 7 DAY')[0]
     if seconds is None:
         return None
     if in_seconds:
@@ -66,27 +64,6 @@ def get_votes(discord_id, return_users=False):
         return responce
 
 
-# рофлан получение мембера по howkawgew или <@91301293123>
-def get_player_by_str(ctx, player):
-    try:
-        if '<@' in player and '>' in player:
-            return ctx.guild.get_member(int(player[(3 if '!' in player else 2):-1]))
-        else:
-            member = utils.get(ctx.guild.members, nick=player)
-            if not member:
-                member = utils.get(ctx.guild.members, name=player)
-            if member:
-                member = member.id
-            else:
-                raise Exception
-            user = ctx.guild.get_member(member)
-            return user
-
-    except Exception as e:
-        print(e)
-        return None
-
-
 # проверка на канал
 def channel_check(ctx):
     if ctx.channel.id in config['trusted'] or not config['channel_filtering']:
@@ -95,7 +72,7 @@ def channel_check(ctx):
 
 
 # Логгер Kappa, логирует почти все успешные выводы команд
-# пиздец (C) Apehum
+# пиздец (C) Apothem
 async def logger(ctx=None, type=None, player1=None, player2=None):
     if type == 'voted':
         embed = discord.Embed(title=texts['voted_title'],
@@ -167,7 +144,7 @@ async def update_top(topi):
 
 async def move_top(top_to_move, right: bool):
     global top_messages
-    top_msg = ''
+    top_msg = []
     for topi in top_messages:
         if topi[0].id == top_to_move:
             top_msg = topi
@@ -276,14 +253,12 @@ async def update_voters():
 async def vote(ctx, player):
     if not channel_check(ctx):
         return 'Pepega'
-    if config['private_voting'] and not fvote_role in ctx.author.roles:
+    if config['private_voting'] and not fvote_role in ctx.author.roles and not ctx.author.id in config['admins']:
         return False
 
     if player_role not in ctx.author.roles:
         return False
 
-    if not isinstance(player, discord.Member):
-        player = get_player_by_str(ctx, player)
     if not player:
         await vote_error(ctx, error='BadArgument')
         return None
@@ -328,7 +303,7 @@ async def vote(ctx, player):
 # Меняет rich presence
 @bot.command()
 async def activity(ctx, *, text):
-    if ctx.author.id in config['admin']:
+    if ctx.author.id in config['admins']:
         await bot.change_presence(status=discord.Status.do_not_disturb, activity=discord.Game(str(text)))
 
 
@@ -400,12 +375,11 @@ async def vote_error(ctx, error, player=None):
 async def unvote(ctx: SlashContext, player=None):
     if not channel_check(ctx):
         return 'Pepega'
-    if config['private_voting'] and fvote_role not in ctx.author.roles:
+    if config['private_voting'] and fvote_role not in ctx.author.roles and ctx.author.id not in config['admins']:
         return False
-
+    if not player:
+        player = ctx.guild.get_member(ctx.author.id)
     if ctx.author.guild.get_role(config['fvote_role']) in ctx.author.roles and player is not None:
-        if not isinstance(player, discord.Member):
-            player = get_player_by_str(ctx, player)
         if player is None:
             await unvote_error(ctx, error='BadArgument')
             return None
@@ -469,22 +443,14 @@ async def unvote_error(ctx, error, player=None):
 async def fvote(ctx, player1, player2):
     if fvote_role not in ctx.author.roles and ctx.author.id not in config['admins']:
         return False
-    if not isinstance(player1, discord.Member):
-        player1 = get_player_by_str(ctx, player1)
-    if not isinstance(player2, discord.Member):
-        player2 = get_player_by_str(ctx, player2)
-    if player_role not in player1.roles:
-        embed = discord.Embed(title=errors['err_title'],
-                              description=errors['Fvote PlayerMissingRole'].format(player=player1.mention),
-                              colour=errors['err_colour'])
-        await ctx.send(f'{ctx.author.mention}', embed=embed)
-        return None
-    if player_role not in player2.roles:
-        embed = discord.Embed(title=errors['err_title'],
-                              description=errors['Fvote PlayerMissingRole'].format(player=player2.mention),
-                              colour=errors['err_colour'])
-        await ctx.send(f'{ctx.author.mention}', embed=embed)
-        return None
+    for player in [player1, player2]:
+        if player_role not in player.roles:
+            embed = discord.Embed(title=errors['err_title'],
+                                  description=errors['Fvote PlayerMissingRole'].format(player=player.mention),
+                                  colour=errors['err_colour'])
+            await ctx.send(f'{ctx.author.mention}', embed=embed)
+            return None
+
     if player1 == player2:
         embed = discord.Embed(title=errors['err_title'],
                               description=errors['Fvote SelfVoting'],
@@ -500,7 +466,6 @@ async def fvote(ctx, player1, player2):
         await ctx.send(f'{ctx.author.mention}', embed=embed)
         return None
 
-    av = False
     db_vote = db.select(columns='voted_user, last_vote_timestamp', where=f'discord_id = {player1.id}')
     if db_vote is not None:
         if int(db_vote[0]) == player2.id:
@@ -512,14 +477,12 @@ async def fvote(ctx, player1, player2):
             return False
         db.update(data=f'voted_user = {player2.id}, last_vote_timestamp={int(time.time())}',
                   where=f'discord_id={player1.id}')
-        av = True
+        await update_member(Pguild.get_member(int(db_vote[0])))
 
     else:
         db.insert(
             data=f'id=NULL, discord_id={player1.id},voted_user={player2.id}, last_vote_timestamp={int(time.time())}')
 
-    if av:
-        await update_member(Pguild.get_member(int(db_vote[0])))
     await update_member(player2)
     await logger(ctx, type='fvoted', player1=player1, player2=player2)
 
@@ -537,12 +500,6 @@ async def vote_info(ctx, player=None):
         return
     if player is None:
         player = ctx.author
-    else:
-        if not isinstance(player, discord.Member):
-            player = get_player_by_str(ctx, player)
-        if player is None:
-            await vote_info_error(ctx, error='BadArgument')
-            return None
     voted = get_votes(player.id, return_users=True)
 
     voted_for = db.select(columns='voted_user', where=f'discord_id = {player.id}')
@@ -706,7 +663,7 @@ async def on_ready():
     autoUpdater(scheduler)
     scheduler.start()
 
-    print('Connected    ')
+    print('Connected')
     await update_members()
     await update_voters()
     print('Ready')

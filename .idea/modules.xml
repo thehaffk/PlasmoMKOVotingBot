@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/PlasmoMKO.iml" filepath="$PROJECT_DIR$/.idea/PlasmoMKO.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../PlasmoSither/.idea/PlasmoSither.iml" filepath="$PROJECT_DIR$/../PlasmoSither/.idea/PlasmoSither.iml" />
     </modules>
   </component>
 </project>

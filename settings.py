@@ -25,7 +25,7 @@ config = {
     'publicLogs': 842484261180669962,  # Parliament join/leave
     'roflanEbaloLogs': 843164835122511872,  # Vote rejected
 
-    'dynamic_votes': False,  # Удалил потому что сроки поджимают peepoClown
+    'dynamic_votes': False,
     'dynamic_votes_max': 20,
 
     'votes_to_member': 3,  # Нужно голосов чтобы стать parliament_member
@@ -89,18 +89,18 @@ errors = {
     'err_title': '',
     'err_colour': 0xFF0000,
     # пинг вне эмбеда во всех ошибках
-    'Vote MissingRole': 'Боже чел ты чухан, у тебя даже роли игрока нет',
-    'Vote PlayerMissingRole': 'Ну и долбаеба ты выбрал, у {player} даже роли игрока нет нахуй',
-    'Vote AlreadyVoted': 'У тебя склероз нахуй? Ты уже проголосовал за {player}',
-    'Vote SelfVoting': 'Блять еще один. Тебе совсем делать нехуй, уебище? Нахуя ты за себя голосуешь?',
-    'Vote Cooldown': 'Да пососи блять, у тебя еще кд не прошел, лох',
-    'Vote TooFewHours': 'Ахах блять, ты тут проходом ебать? У тебя даже {hours} часов на плазме нет',
+    'Vote MissingRole': 'Unable to vote, no such role',
+    'Vote PlayerMissingRole': 'Невозможно проголосовать, у {player} нет роли Игрока',
+    'Vote AlreadyVoted': 'Вы уже проголосовали за {player}',
+    'Vote SelfVoting': 'Невозможно проголосовать за себя',
+    'Vote Cooldown': 'Невозможно проголосовать, Кулдаун',
+    'Vote TooFewHours': 'У вас нет {hours} часов на Plasmo RP',
 
-    'Fvote MissingRole': 'У тебя роль для fvote есть? нет? ну тогда нахуй ты это написал?',
-    'Fvote PlayerMissingRole': 'Ну и долбаеба ты выбрал, у {player} даже роли игрока нет нахуй',
-    'Fvote AlreadyVoted': 'Как такое вообще можно не знать? {player1} уже проголосовал за {player2}',
-    'Fvote SelfVoting': 'Блять еще один. Тебе совсем делать нехуй? Путин тоже сам за себя голосовал? а стоп...',
-    'Fvote TooFewHours': 'Ахах блять, он тут проходом ебать? У {player1} даже {hours} часов на плазме нет',
+    'Fvote MissingRole': 'Admin role required',
+    'Fvote PlayerMissingRole': 'Невозможно проголосовать, у {player} нет роли Игрока',
+    'Fvote AlreadyVoted': '{player1} уже проголосовал за {player2}',
+    'Fvote SelfVoting': 'SelfVoting err',
+    'Fvote TooFewHours': 'Игрок не подходит требованиям: {player1} нет {hours} часов на Plasmo RP',
 
     'Unvote NoSuchVote': 'Чел ты... {player} ни за кого не голосовал...',
     'Unvote Dolbaeb': 'Долбаеб',
