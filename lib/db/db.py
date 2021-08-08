@@ -44,8 +44,8 @@ def requestdb(request: str, retry=False):
     try:
         cur = conn.cursor(buffered=True)
         cur.execute(request)
-        cur.close()
         resp = cur.fetchall()
+        cur.close()
         if debug:
             print(request, resp)
         return resp
