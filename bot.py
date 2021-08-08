@@ -34,7 +34,7 @@ def get_played_hours(discord_id, in_seconds=False):
     if type(uuid) is tuple or uuid is not str:
         uuid = uuid[0]
 
-    uuid = (uuid[0:8] + '-' + uuid[8:12] + '-' + uuid[ц12:16] + '-' + uuid[16:20] + '-' + uuid[20:])
+    uuid = (uuid[0:8] + '-' + uuid[8:12] + '-' + uuid[12:16] + '-' + uuid[16:20] + '-' + uuid[20:])
     seconds = db.requestdb(f'SELECT (CASE WHEN SUM(played) IS NULL THEN 0 ELSE SUM(played) END) FROM stats_month '
                            f'WHERE uuid = "{uuid}" AND date >= CURRENT_DATE - INTERVAL 7 DAY')[0]
     if seconds is None:
