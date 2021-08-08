@@ -36,7 +36,7 @@ def get_played_hours(discord_id, in_seconds=False):
 
     uuid = (uuid[0:8] + '-' + uuid[8:12] + '-' + uuid[12:16] + '-' + uuid[16:20] + '-' + uuid[20:])
     seconds = db.requestdb(f'SELECT (CASE WHEN SUM(played) IS NULL THEN 0 ELSE SUM(played) END) FROM stats_month '
-                           f'WHERE uuid = "{uuid}" AND date >= CURRENT_DATE - INTERVAL 7 DAY')[0]
+                           f'WHERE uuid = "{uuid}" AND date >= CURRENT_DATE - INTERVAL 7 DAY')[0][0]
     if seconds is None:
         return None
     if in_seconds:
@@ -49,6 +49,7 @@ def get_played_hours(discord_id, in_seconds=False):
 def get_votes(discord_id, return_users=False):
     res = db.select(columns='COUNT(*) as votes', where=f'voted_user = {discord_id}',
                     args='GROUP BY voted_user')
+
     if not return_users:
         return 0 if res is None else res[0]
     elif res is None:
