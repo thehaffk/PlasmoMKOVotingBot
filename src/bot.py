@@ -1,3 +1,4 @@
+import ssl # ебучий mysql блять чтоб он сдох
 from lib.db import db
 import discord
 from discord.ext import commands

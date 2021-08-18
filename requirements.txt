@@ -1,0 +1,4 @@
+discord~=1.7.3
+APScheduler~=3.7.0
+discord-py-slash-command~=3.0.1
+mysql-connector-python~=8.0.26
