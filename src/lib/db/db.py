@@ -64,7 +64,7 @@ def requestdb(request: str, retry=False):
 def select(table='parliament_votes', columns='*', where='', args='', always_return_all=False, return_list=False,
            return_matrix=False, retry=False):
     try:
-        if where != '':
+        if where != '' and not 'WHERE' in where:
             where = 'WHERE ' + where
         request = f'SELECT {columns} FROM {table} {where} {args}'
         if debug:
