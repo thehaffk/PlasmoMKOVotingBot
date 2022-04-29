@@ -30,7 +30,7 @@ class MKODatabase:
 
     async def get_candidate_votes(self, candidate_plasmo_id: int) -> List[int]:
         ...  # TODO
-        return 4
+        return [4]
 
     async def get_candidates(self, sort_descending=False) -> List[Candidate]:
         ...  # TODO
