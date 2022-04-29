@@ -28,9 +28,9 @@ class MKODatabase:
     async def get_user_vote(self, voter_plasmo_id: int) -> int:
         ...  # TODO
 
-    async def get_candidate_votes(self, candidate_plasmo_id: int) -> int:
+    async def get_candidate_votes(self, candidate_plasmo_id: int) -> List[int]:
         ...  # TODO
-        return 4
+        return [4]
 
     async def get_candidates(self, sort_descending=False) -> List[Candidate]:
         ...  # TODO
