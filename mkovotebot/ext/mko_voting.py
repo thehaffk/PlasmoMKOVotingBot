@@ -1,142 +1,48 @@
-"""Cog-file for MKO voting"""
-import logging
+from __future__ import annotations
 
-import disnake
-from disnake import ApplicationCommandInteraction
-from disnake.ext import commands
-
-from mkovotebot import settings, config
-from mkovotebot.utils import MKOVotingDatabase
+from dataclasses import dataclass
+from typing import List
 
 
-logger = logging.getLogger(__name__)
-
-# TODO: /fvote <member1> <member2>
-# TODO: /vote-info <member>
-# TODO: /vote-top
-# TODO: /funvote <member>
-
-# TODO: Automatic hourly hours check
-# TODO: Set dynamic votes ☠
-# TODO: Log anything
+@dataclass
+class Candidate:
+    plasmo_id: int
+    votes_count: int
 
 
-class MKOVoting(commands.Cog):
-    """
-    About
-    """
+# TODO: Docstrings
+class MKODatabase:
+    def __init__(self, table: str = "mko"):
+        self.table = table
 
-    def __init__(self, bot: disnake.ext.commands.Bot):
-        self.bot = bot
-        self.database = MKOVotingDatabase
-
-    @commands.slash_command(
-        name="vote-top",
-    )
-    async def vote_top(
-        self,
-        inter: ApplicationCommandInteraction,
+    async def set_user_vote(
+            self, voter_plasmo_id: int, candidate_plasmo_id: int | None
     ):
-        """
-        Получить топ игроков по голосам
+        ...  # TODO
+        return
 
-        Parameters
-        ----------
-        inter: ApplicationCommandInteraction object
-        """
+    async def reset_candidate_votes(self, candidate_plasmo_id: int) -> int:
+        ...  # TODO
+        return 1
 
-        # TODO:
-        #  get roles from db via mkovotebot.utils.database.get_candidates(sort_descending=True)
-        #  create top, add buttons, use view to change pages
-        ...
+    async def get_user_vote(self, voter_plasmo_id: int) -> int:
+        ...  # TODO
 
-    @commands.slash_command(
-        name="vote-info",
-    )
-    async def vote_info(
-        self,
-        inter: ApplicationCommandInteraction,
-        user: disnake.Member = commands.Param(lambda _: _.author),
-    ):
-        """
-        Получить информацию об игроке
+    async def get_candidate_votes(self, candidate_plasmo_id: int) -> List[int]:
+        ...  # TODO
+        return 4
 
-        Parameters
-        ----------
-        user: Игрок
-        inter: ApplicationCommandInteraction object
-        """
-        ...
-
-    @commands.slash_command(
-        name="fvote",
-        default_permission=False,
-    )
-    async def force_vote(
-        self,
-        inter: ApplicationCommandInteraction,
-        voter: disnake.Member,
-        candidate: disnake.Member,
-    ):
-        """
-        Отдать голос игрока за другого игрока
-
-        Parameters
-        ----------
-        voter: Избиратель
-        candidate: ID Избираемый игрок
-        inter: ApplicationCommandInteraction object
-        """
-        logger.info("%s called /fvote %s %s", inter.author.id, voter.id, candidate.id)
-        # TODO: /fvote <member1> <member2>
-
-        # Check old vote
-
-        # Check hours
-
-        # Write to db
-
-        # Call update_candidate(id=candidate.id)
-        ...
-
-    @commands.slash_command(
-        name="funvote",
-        default_permission=False,
-    )
-    async def force_unvote(
-        self,
-        inter: ApplicationCommandInteraction,
-        voter: disnake.Member,
-    ):
-        """
-        Снять голос игрока
-
-        Parameters
-        ----------
-        voter: Избиратель
-        inter: ApplicationCommandInteraction object
-        """
-        logger.info("%s called /funvote %s", inter.author.id, voter.id)
-        # TODO: /funvote <member1> <member2>
-
-        # Check old vote
-
-        # Check hours
-
-        # Write to db
-
-        # Call update_candidate(id=candidate.id)
-        ...
-
-    async def cog_load(self):
-        """
-        Called when disnake cog is loaded
-        """
-        logger.info("%s Ready", __name__)
+    async def get_candidates(self, sort_descending=False) -> List[Candidate]:
+        ...  # TODO
+        return [Candidate(plasmo_id=433, votes_count=5)]
 
 
-def setup(bot):
-    """
-    Disnake internal setup function
-    """
-    bot.add_cog(MKOVoting(bot))
+class PresidentElectionsDatabase(MKODatabase):
+    def __init__(self):
+        super().__init__(table="mko")
+
+
+# TODO: Docstrings
+class MKOVotingDatabase(MKODatabase):
+    def __init__(self):
+        super().__init__(table="president")
