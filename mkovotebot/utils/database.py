@@ -16,7 +16,7 @@ class MKODatabase:
         self.table = table
 
     async def set_user_vote(
-        self, voter_plasmo_id: int, candidate_plasmo_id: int | None
+            self, voter_plasmo_id: int, candidate_plasmo_id: int | None
     ):
         ...  # TODO
         return
@@ -35,3 +35,14 @@ class MKODatabase:
     async def get_candidates(self, sort_descending=False) -> List[Candidate]:
         ...  # TODO
         return [Candidate(plasmo_id=433, votes_count=5)]
+
+
+class PresidentElectionsDatabase(MKODatabase):
+    def __init__(self):
+        super().__init__(table="mko")
+
+
+# TODO: Docstrings
+class MKOVotingDatabase(MKODatabase):
+    def __init__(self):
+        super().__init__(table="president")
