@@ -109,12 +109,11 @@ class MKOVoting(commands.Cog):
         voter: disnake.Member,
     ):
         """
-        Отдать голос игрока за другого игрока
+        Снять голос игрока
 
         Parameters
         ----------
         voter: Избиратель
-        candidate: ID Избираемый игрок
         inter: ApplicationCommandInteraction object
         """
         logger.info("%s called /funvote %s", inter.author.id, voter.id)
