@@ -39,10 +39,10 @@ class MKODatabase:
 
 class PresidentElectionsDatabase(MKODatabase):
     def __init__(self):
-        super().__init__(table="mko")
+        super().__init__(table="president")
 
 
 # TODO: Docstrings
 class MKOVotingDatabase(MKODatabase):
     def __init__(self):
-        super().__init__(table="president")
+        super().__init__(table="mko")
