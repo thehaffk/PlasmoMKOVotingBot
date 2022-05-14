@@ -8,6 +8,7 @@ from mkovotebot.settings import DEBUG
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
+DEBUG_VALUES = bool(os.getenv("BOT_DEBUG", False))
 
 
 class PlasmoRPGuild:
@@ -44,7 +45,7 @@ class TestServer:
     announcement_channel_id = 956990708164747264
 
 
-if DEBUG:
+if DEBUG_VALUES:
     PlasmoRPGuild = TestServer
 
 

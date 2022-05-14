@@ -7,8 +7,6 @@ from mkovotebot import settings, config
 
 logger = logging.getLogger()
 
-__all__ = "bot"
-
 
 class MKOVoteBot(commands.Bot):
     """
