@@ -65,9 +65,16 @@ class MKODatabase:
             await db.commit()
         return True
 
-    async def reset_candidate_votes(self, candidate_plasmo_id: int) -> int:
-        ...  # TODO
-        return 1
+    async def reset_candidate_votes(self, candidate_plasmo_id: int) -> List[int]:
+        candidate_votes = await self.get_candidate_votes(candidate_plasmo_id)
+        async with aiosqlite.connect(PATH) as db:
+            await db.execute(
+                """DELETE FROM ? WHERE candidate_id = ?""",
+                (self.table, candidate_plasmo_id),
+            )
+
+            await db.commit()
+        return candidate_votes
 
     async def get_user_vote(self, voter_plasmo_id: int) -> int:
         ...  # TODO
