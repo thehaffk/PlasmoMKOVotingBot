@@ -3,6 +3,7 @@ __version__ = "2.0.0a"
 DEBUG = True
 DATABASE_PATH = "mkovotebot/votes.db"
 
+
 class Config:
     """Config for bot"""
 
@@ -21,11 +22,9 @@ class Config:
 
     member_emoji = "🏛"
 
+    # TODO
     dynamic_voting_enabled = False  # MKO ONLY
     minimum_members = 10
     maximum_members = 25
     minimum_required_votes = 1
     maximum_required_votes = 10
-
-
-# TODO: Remove

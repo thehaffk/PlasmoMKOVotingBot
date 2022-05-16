@@ -14,6 +14,7 @@ class Player:
     nick: str
 
 
+# TODO: Rename this
 @dataclass
 class _Player(Player):
     weekly_hours: float
