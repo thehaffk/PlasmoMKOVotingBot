@@ -70,7 +70,6 @@ class MKOVoting(commands.Cog):
 
     @commands.slash_command(
         name="fvote",
-        default_permission=False,
     )
     async def force_vote(
         self,
@@ -101,7 +100,6 @@ class MKOVoting(commands.Cog):
 
     @commands.slash_command(
         name="funvote",
-        default_permission=False,
     )
     async def force_unvote(
         self,

@@ -27,7 +27,6 @@ class Main(commands.Cog):
     @commands.has_role(config.PlasmoRPGuild.player_role_id)
     @commands.slash_command(
         name="vote",
-        default_permission=False,
     )
     async def user_vote(
         self, inter: ApplicationCommandInteraction, candidate: disnake.Member

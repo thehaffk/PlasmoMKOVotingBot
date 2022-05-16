@@ -36,7 +36,6 @@ class Main(commands.Cog):
 
     @commands.slash_command(
         name="pfvote",
-        default_permission=False,
     )
     async def force_vote(
         self,
