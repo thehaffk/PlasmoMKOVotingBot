@@ -29,7 +29,6 @@ class MKOVoteBot(commands.Bot):
             status=disnake.Status.do_not_disturb,
             intents=_intents,
             sync_commands=True,
-            sync_permissions=True,
             command_prefix=commands.when_mentioned,
             allowed_mentions=disnake.AllowedMentions(everyone=False),
             activity=disnake.Game(
