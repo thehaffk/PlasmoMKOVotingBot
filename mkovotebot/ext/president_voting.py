@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 # TODO: Logger
 
 
-class Main(commands.Cog):
+class PresidentVoting(commands.Cog):
     """
     About
     """
@@ -64,4 +64,4 @@ def setup(bot):
     """
     Disnake internal setup function
     """
-    bot.add_cog(Main(bot))
+    bot.add_cog(PresidentVoting(bot))

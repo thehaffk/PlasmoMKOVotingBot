@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # TODO: /unvote
 
 
-class Main(commands.Cog):
+class UserVoting(commands.Cog):
     """
     About
     """
@@ -47,4 +47,4 @@ def setup(bot):
     """
     Disnake internal setup function
     """
-    bot.add_cog(Main(bot))
+    bot.add_cog(UserVoting(bot))
