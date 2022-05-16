@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 PATH = settings.DATABASE_PATH
 
 
-
 @dataclass
 class Candidate:
     plasmo_id: int
