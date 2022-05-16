@@ -3,7 +3,6 @@ __version__ = "2.0.0a"
 DEBUG = True
 DATABASE_PATH = "mkovotebot/votes.db"
 
-
 class Config:
     """Config for bot"""
 
