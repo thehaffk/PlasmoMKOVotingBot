@@ -20,7 +20,7 @@ class Config:
     required_weekly_hours = 1
     required_mko_votes = 1
 
-    member_emoji = "🏛"
+    member_emoji = "\\🏛"
 
     # TODO
     dynamic_voting_enabled = False  # MKO ONLY

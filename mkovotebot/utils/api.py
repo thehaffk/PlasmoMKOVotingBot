@@ -54,10 +54,10 @@ async def _get_plasmo_userdata(
             )
 
 
-async def get_player_hours(plasmo_id: int):
-    user = await _get_plasmo_userdata(plasmo_id=plasmo_id)
+async def get_player_hours(discord_id: int) -> float:
+    user = await _get_plasmo_userdata(discord_id=discord_id)
     if user is None:
-        return 0
+        return -1
     else:
         return user.weekly_hours
 
