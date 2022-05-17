@@ -29,9 +29,74 @@ class MKOVoting(commands.Cog):
         self.bot = bot
         self.database = MKOVotingDatabase()
 
-    async def update_user(self, candidate_discord_id) -> bool:
-        ...  # TODO
+    async def update_voter(self, discord_id) -> bool:
         return True
+
+    async def update_candidate(self, discord_id) -> bool:
+        votes = await self.database.get_candidate_votes(discord_id)
+        user = self.bot.get_guild(config.PlasmoRPGuild.id).get_member(discord_id)
+        if (
+            user is None
+            or user.guild.get_role(config.PlasmoRPGuild.player_role_id)
+            not in user.roles
+        ):
+            await self.update_voter(discord_id)
+            if len(votes) > 0:
+                plasmo_user = await api.get_user(discord_id=discord_id)
+                await self.bot.get_guild(config.PlasmoRPGuild.id).get_channel(
+                    config.PlasmoRPGuild.announcement_channel_id
+                ).send(
+                    content=(", ".join([f"<@{user_id}>" for user_id in votes])),
+                    embed=disnake.Embed(
+                        color=disnake.Color.dark_red(),
+                        title="❌ Голоса аннулированны",
+                        description=f"У **{plasmo_user.nick if plasmo_user is not None else 'кандидата'}** "
+                        f"нет роли игрока на Plasmo RP, все голоса аннулированы",
+                    ).set_thumbnail(
+                        url="https://rp.plo.su/avatar/"
+                        + (plasmo_user.nick if plasmo_user is not None else "KOMAP")
+                    ),
+                )
+            logger.debug("Unable to get %s, resetting all votes", discord_id)
+            await self.database.reset_candidate_votes(discord_id)
+            return False
+
+        mko_member_role = user.guild.get_role(config.PlasmoRPGuild.mko_member_role_id)
+        if len(votes) >= settings.Config.required_mko_votes:
+            if mko_member_role not in user.roles:
+                await user.add_roles(mko_member_role, reason="New MKO member")
+                await user.guild.get_channel(
+                    config.PlasmoRPGuild.announcement_channel_id
+                ).send(
+                    content=user.mention,
+                    embed=disnake.Embed(
+                        color=disnake.Color.dark_green(),
+                        title="📃 Новый участник совета",
+                        description=user.mention + " прошел в совет",
+                    ).set_thumbnail(
+                        url="https://rp.plo.su/avatar/" + user.display_name
+                    ),
+                )
+            return True
+        else:
+            if mko_member_role in user.roles:
+                await user.remove_roles(
+                    mko_member_role, reason="Not enough votes to be MKO member"
+                )
+                await user.guild.get_channel(
+                    config.PlasmoRPGuild.announcement_channel_id
+                ).send(
+                    content=user.mention,
+                    embed=disnake.Embed(
+                        color=disnake.Color.dark_red(),
+                        title="❌ Игрок покидает совет",
+                        description=user.mention
+                        + " потерял голоса нужные для участия в совете",
+                    ).set_thumbnail(
+                        url="https://rp.plo.su/avatar/" + user.display_name
+                    ),
+                )
+            return False
 
     @commands.slash_command(
         name="vote-top",
@@ -84,12 +149,12 @@ class MKOVoting(commands.Cog):
             )
 
         await inter.response.defer(ephemeral=True)
-        await self.update_user(user.id)
+        await self.update_candidate(user.id)
 
         voted_user = await self.database.get_user_vote(user.id)
         if (
             voted_user is not None
-            and await self.update_user(candidate_discord_id=voted_user) is True
+            and await self.update_candidate(discord_id=voted_user) is True
         ):
             user_vote_string = f"Игрок проголосовал за <@{voted_user}>"
         else:
@@ -97,7 +162,7 @@ class MKOVoting(commands.Cog):
 
         voters_list = []
         for user_id in await self.database.get_candidate_votes(user.id):
-            if not await self.update_user(user_id):
+            if not await self.update_voter(user_id):
                 continue
             voters_list.append(f"<@{user_id}>")
 
@@ -142,6 +207,16 @@ class MKOVoting(commands.Cog):
         """
         logger.info("%s called /fvote %s %s", inter.author.id, voter.id, candidate.id)
         # TODO: /fvote <member1> <member2>
+        if voter == candidate:
+            await inter.send(
+                "Я тебе просто объясню как будет, я знаю, уже откуда ты, и вижу как ты подключен, "
+                "я сейчас беру эту инфу и просто не поленюсь и пойду в полицию, и хоть у тебя и "
+                "динамический iр , но Бай-флай хранит инфо 3 года, о запросах абонентов и их подключении, "
+                "так что узнать у кого был IР в ото время дело пары минут, а дальше статья за разжигание "
+                "межнациональной розни и о нормальной работе или учёбе да и о жизни, можешь забыть, "
+                "мой тебе совет",
+                ephemeral=True,
+            )
 
         # Check old vote
 
@@ -180,6 +255,10 @@ class MKOVoting(commands.Cog):
 
         # Call update_candidate(id=candidate.id)
         ...
+
+    @commands.Cog.listener("on_ready")
+    async def chen(self):
+        await self.update_candidate(706995136311197730)
 
     async def cog_load(self):
         """

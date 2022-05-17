@@ -42,7 +42,7 @@ class TestServer:
 
     fvote_role_id = mko_head_role_id
 
-    announcement_channel_id = 956990708164747264
+    announcement_channel_id = 969280776459935884
 
 
 if DEBUG_VALUES:
