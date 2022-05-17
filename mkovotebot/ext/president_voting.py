@@ -37,6 +37,7 @@ class PresidentVoting(commands.Cog):
     @commands.slash_command(
         name="pfvote",
     )
+    @commands.default_member_permissions(manage_roles=True)
     async def force_vote(
         self,
         inter: ApplicationCommandInteraction,
