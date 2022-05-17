@@ -11,13 +11,10 @@ from mkovotebot.utils import MKOVotingDatabase, database, api
 logger = logging.getLogger(__name__)
 
 
-# TODO: /fvote <member1> <member2>
 # TODO: /vote-top
-# TODO: /funvote <member>
 
 # TODO: Automatic hourly hours check
-# TODO: Set dynamic votes ☠
-# TODO: Log anything
+# TODO: dynamic votes ☠
 
 
 class MKOVoting(commands.Cog):
@@ -30,9 +27,53 @@ class MKOVoting(commands.Cog):
         self.database = MKOVotingDatabase()
 
     async def update_voter(self, discord_id) -> bool:
+        """
+        Check voter - hours and player role
+
+        :return - True if voter`s vote is active
+        """
+        plasmo_guild = self.bot.get_guild(config.PlasmoRPGuild.id)
+        user = plasmo_guild.get_member(discord_id)
+        candidate_id = await self.database.get_user_vote(discord_id)
+        if candidate_id is None:
+            return False
+
+        if (
+            user is None
+            or plasmo_guild.get_role(config.PlasmoRPGuild.player_role_id)
+            not in user.roles
+        ):
+            await self.database.set_user_vote(voter_id=discord_id, candidate_id=None)
+            await self.update_candidate(candidate_id)
+            return False
+
+        played_hours = await api.get_player_hours(discord_id)
+        if played_hours == -1:  # Plasmo API Error
+            return True
+
+        if played_hours < settings.Config.required_weekly_hours:
+            await self.database.set_user_vote(voter_id=discord_id, candidate_id=None)
+            await plasmo_guild.get_channel(config.PlasmoRPGuild.low_priority_announcement_channel_id).send(
+                content=user.mention,
+                embed=disnake.Embed(
+                    color=disnake.Color.dark_red(),
+                    title="❌ Ваш голос аннулирован",
+                    description=f"Чтобы голосовать нужно наиграть "
+                    f"хотя бы {settings.Config.required_weekly_hours} ч. за неделю \n "
+                                f"У вас - {round(played_hours, 2)} ч.",
+                ).set_thumbnail(url="https://rp.plo.su/avatar/" + user.display_name),
+            )
+            await self.update_candidate(candidate_id)
+            return False
+
         return True
 
     async def update_candidate(self, discord_id) -> bool:
+        """
+        Check candidate - hours and player role
+
+        :return - True if voter`s vote is active
+        """
         votes = await self.database.get_candidate_votes(discord_id)
         user = self.bot.get_guild(config.PlasmoRPGuild.id).get_member(discord_id)
         if (
@@ -45,6 +86,8 @@ class MKOVoting(commands.Cog):
                 plasmo_user = await api.get_user(discord_id=discord_id)
                 await self.bot.get_guild(config.PlasmoRPGuild.id).get_channel(
                     config.PlasmoRPGuild.announcement_channel_id
+                    if len(votes) >= settings.Config.required_mko_votes
+                    else config.PlasmoRPGuild.low_priority_announcement_channel_id
                 ).send(
                     content=(", ".join([f"<@{user_id}>" for user_id in votes])),
                     embed=disnake.Embed(
@@ -150,6 +193,7 @@ class MKOVoting(commands.Cog):
 
         await inter.response.defer(ephemeral=True)
         await self.update_candidate(user.id)
+        await self.update_voter(user.id)
 
         voted_user = await self.database.get_user_vote(user.id)
         if (
@@ -255,10 +299,6 @@ class MKOVoting(commands.Cog):
 
         # Call update_candidate(id=candidate.id)
         ...
-
-    @commands.Cog.listener("on_ready")
-    async def chen(self):
-        await self.update_candidate(706995136311197730)
 
     async def cog_load(self):
         """

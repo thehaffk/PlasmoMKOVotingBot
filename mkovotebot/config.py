@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 
 from mkovotebot.settings import DEBUG
 
-
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
@@ -26,6 +25,7 @@ class PlasmoRPGuild:
     fvote_role_id = mko_head_role_id
 
     announcement_channel_id = 844505711211446282
+    low_priority_announcement_channel_id = 754644298720477264
 
 
 class TestServer:
@@ -43,6 +43,7 @@ class TestServer:
     fvote_role_id = mko_head_role_id
 
     announcement_channel_id = 969280776459935884
+    low_priority_announcement_channel_id = 969291098348458004
 
 
 if DEBUG_VALUES:
