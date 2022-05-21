@@ -12,7 +12,7 @@ class Config:
 
     vote_cooldown = 60  # In minutes
 
-    president_voting_enabled = False  # Enables president elections (commands and checks)
+    president_voting_enabled = True  # Enables president elections (commands and checks)
 
     required_weekly_hours = 1
     required_mko_votes = 1
