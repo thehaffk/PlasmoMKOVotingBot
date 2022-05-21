@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 import logging
 
 import aiosqlite as aiosqlite
@@ -47,7 +47,7 @@ class MKODatabase:
             await db.execute(query)
             await db.commit()
 
-    async def set_user_vote(self, voter_id: int, candidate_id: int | None):
+    async def set_user_vote(self, voter_id: int, candidate_id: Optional[int]):
         logger.debug(
             "[%s] set_user_vote is called with %s / %s",
             self._table,
@@ -89,7 +89,7 @@ class MKODatabase:
             await db.commit()
         return candidate_votes
 
-    async def get_user_vote(self, voter_id: int) -> int | None:
+    async def get_user_vote(self, voter_id: int) -> Optional[int]:
         logger.debug("[%s] get_user_vote is called with %s", self._table, voter_id)
         async with aiosqlite.connect(PATH) as db:
             async with db.execute(

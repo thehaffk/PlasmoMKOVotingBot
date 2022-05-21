@@ -52,14 +52,16 @@ class MKOVoting(commands.Cog):
 
         if played_hours < settings.Config.required_weekly_hours:
             await self.database.set_user_vote(voter_id=discord_id, candidate_id=None)
-            await plasmo_guild.get_channel(config.PlasmoRPGuild.low_priority_announcement_channel_id).send(
+            await plasmo_guild.get_channel(
+                config.PlasmoRPGuild.low_priority_announcement_channel_id
+            ).send(
                 content=user.mention,
                 embed=disnake.Embed(
                     color=disnake.Color.dark_red(),
                     title="❌ Ваш голос аннулирован",
                     description=f"Чтобы голосовать нужно наиграть "
                     f"хотя бы {settings.Config.required_weekly_hours} ч. за неделю \n "
-                                f"||У вас - {round(played_hours, 2)} ч.||",
+                    f"||У вас - {round(played_hours, 2)} ч.||",
                 ).set_thumbnail(url="https://rp.plo.su/avatar/" + user.display_name),
             )
             await self.update_candidate(candidate_id)
@@ -71,7 +73,7 @@ class MKOVoting(commands.Cog):
         """
         Check candidate - hours and player role
 
-        :return - True if voter`s vote is active
+        :return - True if candidate is parliament member
         """
         votes = await self.database.get_candidate_votes(discord_id)
         user = self.bot.get_guild(config.PlasmoRPGuild.id).get_member(discord_id)
@@ -192,14 +194,12 @@ class MKOVoting(commands.Cog):
             )
 
         await inter.response.defer(ephemeral=True)
-        await self.update_candidate(user.id)
+
         await self.update_voter(user.id)
+        await self.update_candidate(user.id)
 
         voted_user = await self.database.get_user_vote(user.id)
-        if (
-            voted_user is not None
-            and await self.update_candidate(discord_id=voted_user) is True
-        ):
+        if voted_user is not None:
             user_vote_string = f"Игрок проголосовал за <@{voted_user}>"
         else:
             user_vote_string = "Игрок ни за кого не проголосовал"
@@ -250,9 +250,8 @@ class MKOVoting(commands.Cog):
         inter: ApplicationCommandInteraction object
         """
         logger.info("%s called /fvote %s %s", inter.author.id, voter.id, candidate.id)
-        # TODO: /fvote <member1> <member2>
-        if voter == candidate:
-            await inter.send(
+        if voter == candidate or voter.bot or candidate.bot:
+            return await inter.send(
                 "Я тебе просто объясню как будет, я знаю, уже откуда ты, и вижу как ты подключен, "
                 "я сейчас беру эту инфу и просто не поленюсь и пойду в полицию, и хоть у тебя и "
                 "динамический iр , но Бай-флай хранит инфо 3 года, о запросах абонентов и их подключении, "
@@ -262,14 +261,30 @@ class MKOVoting(commands.Cog):
                 ephemeral=True,
             )
 
-        # Check old vote
+        await inter.response.defer(ephemeral=True)
 
-        # Check hours
+        await self.database.set_user_vote(voter_id=voter.id, candidate_id=candidate.id)
+        await self.bot.get_guild(config.DevServer.id).get_channel(
+            config.DevServer.log_channel_id
+        ).send(f"[{voter.id}] -> [{candidate.id}] ({inter.author.id}/{inter.author})")
+        if await self.update_voter(voter.id):
+            await inter.edit_original_message(
+                embed=disnake.Embed(
+                    title="Голос успешно изменен",
+                    description=f"Голос {voter.mention} отдан за {candidate.mention}",
+                    color=disnake.Color.dark_green(),
+                )
+            )
+        else:
+            await inter.edit_original_message(
+                embed=disnake.Embed(
+                    title="Голос обработан",
+                    description=f"Голос обработан, но сразу же аннулирован",
+                    color=disnake.Color.yellow(),
+                )
+            )
 
-        # Write to db
-
-        # Call update_candidate(id=candidate.id)
-        ...
+        await self.update_candidate(candidate.id)
 
     @commands.slash_command(
         name="funvote",
@@ -289,16 +304,24 @@ class MKOVoting(commands.Cog):
         inter: ApplicationCommandInteraction object
         """
         logger.info("%s called /funvote %s", inter.author.id, voter.id)
-        # TODO: /funvote <member1> <member2>
+        await inter.response.defer(ephemeral=True)
 
-        # Check old vote
+        old_vote = await self.database.get_user_vote(voter_id=voter.id)
+        if old_vote:
+            await self.database.set_user_vote(voter_id=voter.id, candidate_id=None)
+            await self.update_candidate(old_vote)
 
-        # Check hours
-
-        # Write to db
-
-        # Call update_candidate(id=candidate.id)
-        ...
+        await self.bot.get_guild(config.DevServer.id).get_channel(
+            config.DevServer.log_channel_id
+        ).send(f"[{voter.id}] -> [CLEARED] ({inter.author.id}/{inter.author})")
+        await inter.edit_original_message(
+            embed=disnake.Embed(
+                title="Голос успешно изменен",
+                description=f"Голос {voter.mention} сброшен",
+                color=disnake.Color.dark_green(),
+            )
+        )
+        return True
 
     async def cog_load(self):
         """

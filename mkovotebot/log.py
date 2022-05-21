@@ -41,4 +41,6 @@ def setup() -> None:
 
     coloredlogs.DEFAULT_LOG_FORMAT = format_string
 
-    coloredlogs.install(level=(logging.DEBUG if settings.DEBUG else logging.INFO), stream=sys.stdout)
+    coloredlogs.install(
+        level=(logging.DEBUG if settings.DEBUG else logging.INFO), stream=sys.stdout
+    )
