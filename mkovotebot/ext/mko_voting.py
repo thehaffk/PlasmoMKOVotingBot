@@ -11,8 +11,6 @@ from mkovotebot.utils import MKOVotingDatabase, database, api
 logger = logging.getLogger(__name__)
 
 
-# TODO: /vote-top
-
 # TODO: Automatic hourly hours check
 # TODO: dynamic votes ☠
 
@@ -26,7 +24,7 @@ class MKOVoting(commands.Cog):
         self.bot = bot
         self.database = MKOVotingDatabase()
 
-    async def update_voter(self, discord_id) -> bool:
+    async def update_voter(self, discord_id, avoid_circular_calls=False) -> bool:
         """
         Check voter - hours and player role
 
@@ -44,7 +42,8 @@ class MKOVoting(commands.Cog):
             not in user.roles
         ):
             await self.database.set_user_vote(voter_id=discord_id, candidate_id=None)
-            await self.update_candidate(candidate_id)
+            if not avoid_circular_calls:
+                await self.update_candidate(candidate_id)
             return False
 
         played_hours = await api.get_player_hours(discord_id)
@@ -60,7 +59,7 @@ class MKOVoting(commands.Cog):
                     title="❌ Ваш голос аннулирован",
                     description=f"Чтобы голосовать нужно наиграть "
                     f"хотя бы {settings.Config.required_weekly_hours} ч. за неделю \n "
-                                f"У вас - {round(played_hours, 2)} ч.",
+                                f"||У вас - {round(played_hours, 2)} ч.||",
                 ).set_thumbnail(url="https://rp.plo.su/avatar/" + user.display_name),
             )
             await self.update_candidate(candidate_id)
@@ -81,7 +80,7 @@ class MKOVoting(commands.Cog):
             or user.guild.get_role(config.PlasmoRPGuild.player_role_id)
             not in user.roles
         ):
-            await self.update_voter(discord_id)
+            await self.update_voter(discord_id, avoid_circular_calls=True)
             if len(votes) > 0:
                 plasmo_user = await api.get_user(discord_id=discord_id)
                 await self.bot.get_guild(config.PlasmoRPGuild.id).get_channel(
@@ -97,7 +96,7 @@ class MKOVoting(commands.Cog):
                         f"нет роли игрока на Plasmo RP, все голоса аннулированы",
                     ).set_thumbnail(
                         url="https://rp.plo.su/avatar/"
-                        + (plasmo_user.nick if plasmo_user is not None else "KOMAP")
+                        + (plasmo_user.nick if plasmo_user is not None else "___")
                     ),
                 )
             logger.debug("Unable to get %s, resetting all votes", discord_id)
@@ -182,6 +181,7 @@ class MKOVoting(commands.Cog):
             user.guild.get_role(config.PlasmoRPGuild.player_role_id) not in user.roles
             or user.bot
         ):
+            await self.update_candidate(user.id)
             return await inter.send(
                 embed=disnake.Embed(
                     color=disnake.Color.dark_red(),
