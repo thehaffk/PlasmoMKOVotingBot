@@ -3,7 +3,7 @@ import logging
 
 import disnake
 from disnake import ApplicationCommandInteraction
-from disnake.ext import commands
+from disnake.ext import commands, tasks
 
 from mkovotebot import settings, config
 from mkovotebot.utils import MKOVotingDatabase, database, api, get_votes_string
@@ -11,7 +11,6 @@ from mkovotebot.utils import MKOVotingDatabase, database, api, get_votes_string
 logger = logging.getLogger(__name__)
 
 
-# TODO: Automatic hourly hours check
 # TODO: dynamic votes ☠
 
 
@@ -34,21 +33,20 @@ class MKOVoteTopView(disnake.ui.View):
         _to = _from + config.maximum_candidates_per_page
 
         if len(candidates[_from:_to]) == 0:
-            embed.set_footer(
+            return embed.set_footer(
                 text="На этой странице нет кандидатов"
             )
-        else:
-            for place, candidate in enumerate(candidates[_from:_to]):
-                place = (place + 1) + config.maximum_candidates_per_page * (index - 1)
-                user = self.plasmo_guild.get_member(candidate.discord_id)
-                embed.add_field(
-                    name=f"{place}. {user.display_name if user else '❌ DELETED'}"
-                         + settings.Config.member_emoji
-                    if candidate.votes_count >= settings.Config.required_mko_votes and user
-                    else "",
-                    value=get_votes_string(candidate.votes_count),
-                )
 
+        for place, candidate in enumerate(candidates[_from:_to]):
+            place = (place + 1) + config.maximum_candidates_per_page * (index - 1)
+            user = self.plasmo_guild.get_member(candidate.discord_id)
+            embed.add_field(
+                name=f"{place}. {user.display_name if user else '❌ DELETED'}"
+                     + settings.Config.member_emoji
+                if candidate.votes_count >= settings.Config.required_mko_votes and user
+                else "",
+                value=get_votes_string(candidate.votes_count),
+            )
         return embed
 
     @disnake.ui.button(emoji="⬅️", style=disnake.ButtonStyle.secondary)
@@ -385,6 +383,24 @@ class MKOVoting(commands.Cog):
             )
         )
         return True
+
+    @tasks.loop(hours=8)
+    async def update_all_users(self):
+        plasmo_guild = self.bot.get_guild(config.PlasmoRPGuild.id)
+        mko_member_role_owners = [user.id for user in plasmo_guild.get_role(config.PlasmoRPGuild.mko_member_role_id).members]
+        candidates = [candidate.discord_id for candidate in await self.database.get_candidates()]
+        for candidate in set(mko_member_role_owners + candidates):
+            for voter in await self.database.get_candidate_votes(candidate):
+                await self.update_voter(voter)
+            await self.update_candidate(candidate)
+
+    @update_all_users.before_loop
+    async def before_printer(self):
+        await self.bot.wait_until_ready()
+
+    @commands.Cog.listener("on_ready")
+    async def on_ready_listener(self):
+        await self.update_all_users()
 
     async def cog_load(self):
         """
