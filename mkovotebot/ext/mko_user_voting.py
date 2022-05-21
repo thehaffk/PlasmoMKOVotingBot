@@ -11,10 +11,6 @@ from mkovotebot.utils import MKOVotingDatabase
 logger = logging.getLogger(__name__)
 
 
-# TODO: /vote <member>
-# TODO: /unvote
-
-
 class UserVoting(commands.Cog):
     """
     About
@@ -29,18 +25,41 @@ class UserVoting(commands.Cog):
         name="vote",
     )
     async def user_vote(
-        self, inter: ApplicationCommandInteraction, candidate: disnake.Member
+            self, inter: ApplicationCommandInteraction, candidate: disnake.Member
     ):
         """
-        Placeholder for sub commands
+        Проголосовать за игрока
+
+        Parameters
+        ----------
+        candidate: Игрок, за которого вы хотите проголосовать
+        inter: ApplicationCommandInteraction object
         """
-        pass
+        # TODO: Meat
+        # TODO: Cooldows
+
+    @commands.has_role(config.PlasmoRPGuild.player_role_id)
+    @commands.slash_command(
+        name="unvote",
+    )
+    async def user_unvote(
+            self, inter: ApplicationCommandInteraction
+    ):
+        """
+        Отменить свой голос
+
+        Parameters
+        ----------
+        inter: ApplicationCommandInteraction object
+        """
+        # TODO: Meat
+        # TODO: Cooldows
 
     async def cog_load(self):
         """
         Called when disnake cog is loaded
         """
-        logger.info("%s Ready", __name__)
+        logger.info("%s Loaded", __name__)
 
 
 def setup(bot):
