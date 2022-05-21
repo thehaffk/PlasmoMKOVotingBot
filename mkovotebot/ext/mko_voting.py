@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 class MKOVoteTopView(disnake.ui.View):
     def __init__(
-            self,
-            plasmo_guild: disnake.Guild,
+        self,
+        plasmo_guild: disnake.Guild,
     ):
         super().__init__(timeout=600)
         self.page = 1
@@ -33,16 +33,14 @@ class MKOVoteTopView(disnake.ui.View):
         _to = _from + config.maximum_candidates_per_page
 
         if len(candidates[_from:_to]) == 0:
-            return embed.set_footer(
-                text="На этой странице нет кандидатов"
-            )
+            return embed.set_footer(text="На этой странице нет кандидатов")
 
         for place, candidate in enumerate(candidates[_from:_to]):
             place = (place + 1) + config.maximum_candidates_per_page * (index - 1)
             user = self.plasmo_guild.get_member(candidate.discord_id)
             embed.add_field(
                 name=f"{place}. {user.display_name if user else '❌ DELETED'}"
-                     + settings.Config.member_emoji
+                + settings.Config.member_emoji
                 if candidate.votes_count >= settings.Config.required_mko_votes and user
                 else "",
                 value=get_votes_string(candidate.votes_count),
@@ -51,7 +49,7 @@ class MKOVoteTopView(disnake.ui.View):
 
     @disnake.ui.button(emoji="⬅️", style=disnake.ButtonStyle.secondary)
     async def prev_page(
-            self, button: disnake.ui.Button, inter: disnake.MessageInteraction
+        self, button: disnake.ui.Button, inter: disnake.MessageInteraction
     ):
         if not self.page == 1:
             self.page -= 1
@@ -60,7 +58,7 @@ class MKOVoteTopView(disnake.ui.View):
 
     @disnake.ui.button(emoji="➡️", style=disnake.ButtonStyle.secondary)
     async def next_page(
-            self, button: disnake.ui.Button, inter: disnake.MessageInteraction
+        self, button: disnake.ui.Button, inter: disnake.MessageInteraction
     ):
         candidates = await self.database.get_candidates()
         maximum_page = len(candidates) // config.maximum_candidates_per_page + int(
@@ -95,9 +93,9 @@ class MKOVoting(commands.Cog):
             return False
 
         if (
-                user is None
-                or plasmo_guild.get_role(config.PlasmoRPGuild.player_role_id)
-                not in user.roles
+            user is None
+            or plasmo_guild.get_role(config.PlasmoRPGuild.player_role_id)
+            not in user.roles
         ):
             await self.database.set_user_vote(voter_id=discord_id, candidate_id=None)
             if not avoid_circular_calls:
@@ -118,8 +116,8 @@ class MKOVoting(commands.Cog):
                     color=disnake.Color.dark_red(),
                     title="❌ Ваш голос аннулирован",
                     description=f"Чтобы голосовать нужно наиграть "
-                                f"хотя бы {settings.Config.required_weekly_hours} ч. за неделю \n "
-                                f"||У вас - {round(played_hours, 2)} ч.||",
+                    f"хотя бы {settings.Config.required_weekly_hours} ч. за неделю \n "
+                    f"||У вас - {round(played_hours, 2)} ч.||",
                 ).set_thumbnail(url="https://rp.plo.su/avatar/" + user.display_name),
             )
             await self.update_candidate(candidate_id)
@@ -136,9 +134,9 @@ class MKOVoting(commands.Cog):
         votes = await self.database.get_candidate_votes(discord_id)
         user = self.bot.get_guild(config.PlasmoRPGuild.id).get_member(discord_id)
         if (
-                user is None
-                or user.guild.get_role(config.PlasmoRPGuild.player_role_id)
-                not in user.roles
+            user is None
+            or user.guild.get_role(config.PlasmoRPGuild.player_role_id)
+            not in user.roles
         ):
             await self.update_voter(discord_id, avoid_circular_calls=True)
             if len(votes) > 0:
@@ -153,10 +151,10 @@ class MKOVoting(commands.Cog):
                         color=disnake.Color.dark_red(),
                         title="❌ Голоса аннулированны",
                         description=f"У **{plasmo_user.nick if plasmo_user is not None else 'кандидата'}** "
-                                    f"нет роли игрока на Plasmo RP, все голоса аннулированы",
+                        f"нет роли игрока на Plasmo RP, все голоса аннулированы",
                     ).set_thumbnail(
                         url="https://rp.plo.su/avatar/"
-                            + (plasmo_user.nick if plasmo_user is not None else "___")
+                        + (plasmo_user.nick if plasmo_user is not None else "___")
                     ),
                 )
             logger.debug("Unable to get %s, resetting all votes", discord_id)
@@ -193,7 +191,7 @@ class MKOVoting(commands.Cog):
                         color=disnake.Color.dark_red(),
                         title="❌ Игрок покидает совет",
                         description=user.mention
-                                    + " потерял голоса нужные для участия в совете",
+                        + " потерял голоса нужные для участия в совете",
                     ).set_thumbnail(
                         url="https://rp.plo.su/avatar/" + user.display_name
                     ),
@@ -204,8 +202,8 @@ class MKOVoting(commands.Cog):
         name="vote-top",
     )
     async def vote_top(
-            self,
-            inter: ApplicationCommandInteraction,
+        self,
+        inter: ApplicationCommandInteraction,
     ):
         """
         Получить топ игроков по голосам
@@ -227,9 +225,9 @@ class MKOVoting(commands.Cog):
         name="vote-info",
     )
     async def vote_info(
-            self,
-            inter: ApplicationCommandInteraction,
-            user: disnake.Member = commands.Param(lambda _: _.author),
+        self,
+        inter: ApplicationCommandInteraction,
+        user: disnake.Member = commands.Param(lambda _: _.author),
     ):
         """
         Получить информацию об игроке
@@ -241,8 +239,8 @@ class MKOVoting(commands.Cog):
         """
 
         if (
-                user.guild.get_role(config.PlasmoRPGuild.player_role_id) not in user.roles
-                or user.bot
+            user.guild.get_role(config.PlasmoRPGuild.player_role_id) not in user.roles
+            or user.bot
         ):
             await self.update_candidate(user.id)
             return await inter.send(
@@ -276,11 +274,11 @@ class MKOVoting(commands.Cog):
         user_info_embed = disnake.Embed(
             color=disnake.Color.dark_green(),
             title=f"Статистика {user.display_name} "
-                  + (
-                      settings.Config.member_emoji
-                      if len(voters) >= settings.Config.required_mko_votes
-                      else ""
-                  ),
+            + (
+                settings.Config.member_emoji
+                if len(voters) >= settings.Config.required_mko_votes
+                else ""
+            ),
             description=user_vote_string,
         )
         if len(voters):
@@ -296,10 +294,10 @@ class MKOVoting(commands.Cog):
     )
     @commands.default_member_permissions(manage_roles=True)
     async def force_vote(
-            self,
-            inter: ApplicationCommandInteraction,
-            voter: disnake.Member,
-            candidate: disnake.Member,
+        self,
+        inter: ApplicationCommandInteraction,
+        voter: disnake.Member,
+        candidate: disnake.Member,
     ):
         """
         Отдать голос игрока за другого игрока
@@ -352,9 +350,9 @@ class MKOVoting(commands.Cog):
     )
     @commands.default_member_permissions(manage_roles=True)
     async def force_unvote(
-            self,
-            inter: ApplicationCommandInteraction,
-            voter: disnake.Member,
+        self,
+        inter: ApplicationCommandInteraction,
+        voter: disnake.Member,
     ):
         """
         Снять голос игрока
@@ -387,8 +385,15 @@ class MKOVoting(commands.Cog):
     @tasks.loop(hours=8)
     async def update_all_users(self):
         plasmo_guild = self.bot.get_guild(config.PlasmoRPGuild.id)
-        mko_member_role_owners = [user.id for user in plasmo_guild.get_role(config.PlasmoRPGuild.mko_member_role_id).members]
-        candidates = [candidate.discord_id for candidate in await self.database.get_candidates()]
+        mko_member_role_owners = [
+            user.id
+            for user in plasmo_guild.get_role(
+                config.PlasmoRPGuild.mko_member_role_id
+            ).members
+        ]
+        candidates = [
+            candidate.discord_id for candidate in await self.database.get_candidates()
+        ]
         for candidate in set(mko_member_role_owners + candidates):
             for voter in await self.database.get_candidate_votes(candidate):
                 await self.update_voter(voter)
