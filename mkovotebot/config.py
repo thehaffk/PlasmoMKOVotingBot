@@ -55,4 +55,6 @@ class DevServer:
     Config for development server (digital drugs technologies)
     """
 
+    id = 966785796902363188
+    log_channel_id = 976077504718712832
     pass  # TODO: Error logger
