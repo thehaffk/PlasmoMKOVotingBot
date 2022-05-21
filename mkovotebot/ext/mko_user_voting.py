@@ -25,7 +25,7 @@ class UserVoting(commands.Cog):
         name="vote",
     )
     async def user_vote(
-            self, inter: ApplicationCommandInteraction, candidate: disnake.Member
+        self, inter: ApplicationCommandInteraction, candidate: disnake.Member
     ):
         """
         Проголосовать за игрока
@@ -42,9 +42,7 @@ class UserVoting(commands.Cog):
     @commands.slash_command(
         name="unvote",
     )
-    async def user_unvote(
-            self, inter: ApplicationCommandInteraction
-    ):
+    async def user_unvote(self, inter: ApplicationCommandInteraction):
         """
         Отменить свой голос
 
@@ -59,7 +57,7 @@ class UserVoting(commands.Cog):
         """
         Called when disnake cog is loaded
         """
-        logger.info("%s Loaded", __name__)
+        logger.info("%s Loaded  ", __name__)
 
 
 def setup(bot):
