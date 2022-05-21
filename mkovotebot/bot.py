@@ -14,7 +14,6 @@ class MKOVoteBot(commands.Bot):
     """
 
     def __init__(self, *args, **kwargs):
-        kwargs["test_guilds"] = [config.PlasmoRPGuild.id]
         super().__init__(*args, **kwargs)
 
     @classmethod
@@ -31,6 +30,7 @@ class MKOVoteBot(commands.Bot):
             sync_commands=True,
             command_prefix=commands.when_mentioned,
             allowed_mentions=disnake.AllowedMentions(everyone=False),
+            test_guilds=[config.PlasmoRPGuild.id],
             activity=disnake.Game(
                 name="Bot for MKO voting and president elections,"
                 " made by Plasmo R&D [digital drugs technologies]"

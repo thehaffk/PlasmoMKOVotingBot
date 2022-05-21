@@ -9,6 +9,8 @@ load_dotenv()
 TOKEN = os.getenv("TOKEN")
 DEBUG_VALUES = bool(os.getenv("BOT_DEBUG", False))
 
+maximum_candidates_per_page = 10
+
 
 class PlasmoRPGuild:
     """
