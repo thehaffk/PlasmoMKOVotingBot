@@ -108,7 +108,7 @@ class PresidentElections(commands.Cog):
                 embed=disnake.Embed(
                     color=disnake.Color.dark_red(),
                     title="❌ Ваш голос аннулирован",
-                    description=f"Чтобы голосовать на выборах нужно наиграть "
+                    description=f"Чтобы голосовать на выборах на выборах нужно наиграть "
                     f"хотя бы {settings.Config.required_weekly_hours} ч. за неделю \n "
                     f"||У вас - {round(played_hours, 2)} ч.||",
                 ).set_thumbnail(url="https://rp.plo.su/avatar/" + user.display_name),
@@ -132,14 +132,12 @@ class PresidentElections(commands.Cog):
                 plasmo_user = await api.get_user(discord_id=discord_id)
                 await self.bot.get_guild(config.PlasmoRPGuild.id).get_channel(
                     config.PlasmoRPGuild.announcement_channel_id
-                    if len(votes) >= settings.Config.required_mko_votes
-                    else config.PlasmoRPGuild.low_priority_announcement_channel_id
                 ).send(
                     content=(", ".join([f"<@{user_id}>" for user_id in votes])),
                     embed=disnake.Embed(
                         color=disnake.Color.dark_red(),
                         title="❌ Голоса аннулированны",
-                        description=f"У **{plasmo_user.nick if plasmo_user is not None else 'кандидата'}** "
+                        description=f"У **{plasmo_user.nick if plasmo_user is not None else 'кандидата в президенты'}** "
                         f"нет роли игрока на Plasmo RP, все голоса аннулированы",
                     ).set_thumbnail(
                         url="https://rp.plo.su/avatar/"
