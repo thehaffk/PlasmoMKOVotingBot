@@ -124,10 +124,12 @@ class MKODatabase:
             async with db.execute(
                 f"""SELECT candidate_id, COUNT(*) FROM {self._table} GROUP BY candidate_id""",
             ) as cursor:
-                return [
+                candidates = [
                     Candidate(discord_id=raw_candidate[0], votes_count=raw_candidate[1])
                     for raw_candidate in await cursor.fetchall()
                 ]
+                candidates.sort(key=lambda c: c.votes_count, reverse=True)
+                return candidates
 
 
 class PresidentElectionsDatabase(MKODatabase):
