@@ -59,7 +59,7 @@ class PresidentVoteTopView(disnake.ui.View):
     ):
         candidates = await self.database.get_candidates()
         maximum_page = len(candidates) // config.maximum_candidates_per_page + int(
-            len(candidates) % config.maximum_candidates_per_page
+            bool(len(candidates) % config.maximum_candidates_per_page)
         )
 
         if self.page < maximum_page:
