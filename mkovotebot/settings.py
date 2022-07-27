@@ -5,7 +5,7 @@ DATABASE_PATH = "mkovotebot/votes.db"
 
 
 class Config:
-    mko_voting_enabled = False
+    mko_voting_enabled = True
 
     # ⚠ mko_voting_enabled must be True for using this
     user_voting_enabled = (
@@ -14,10 +14,10 @@ class Config:
 
     vote_cooldown = 60  # In minutes
 
-    president_voting_enabled = True  # Enables president elections (commands and checks)
+    president_voting_enabled = False  # Enables president elections (commands and checks)
 
     required_weekly_hours = 2
-    required_mko_votes = 1
+    required_mko_votes = 3
 
     member_emoji = "\\🏛"
 

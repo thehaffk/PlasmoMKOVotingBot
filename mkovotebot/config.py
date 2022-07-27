@@ -39,7 +39,7 @@ class TestServer:
 
     admin_role_id = 966785796927524897
     mko_head_role_id = 966785796902363194
-    mko_member_role_id = 969284288229044245
+    mko_member_role_id = 1001980910842945606
     player_role_id = 966785796902363189
 
     fvote_role_id = mko_head_role_id
