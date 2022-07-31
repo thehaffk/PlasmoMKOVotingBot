@@ -104,6 +104,7 @@ class MKOVoting(commands.Cog):
 
         played_hours = await api.get_player_hours(discord_id)
         if played_hours == -1:  # Plasmo API Error
+            logger.debug("Plasmo API Error")
             return True
 
         if played_hours < settings.Config.required_weekly_hours:

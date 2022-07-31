@@ -41,7 +41,7 @@ async def _get_plasmo_userdata(
             response_json = await response.json()
             if (
                 not response_json.get("status", False)
-                or response_json.get("data", {}).get("on_server", False) is False
+                or response_json.get("data", {}).get("in_guild", False) is False
             ):
                 return None
             data = response_json["data"]
@@ -68,7 +68,6 @@ async def get_user(
 ) -> Union[None, Player]:
     player = await _get_plasmo_userdata(plasmo_id, discord_id, nickname)
     if player is None:
-        player: None
         return None
     else:
         # looks terrible, there must be some smart way to do it
