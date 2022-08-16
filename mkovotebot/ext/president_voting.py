@@ -150,6 +150,8 @@ class PresidentElections(commands.Cog):
 
     @commands.slash_command(
         name="pvote-top",
+        guild_ids=[config.PlasmoRPGuild.id],
+
     )
     async def vote_top(
         self,
@@ -173,6 +175,8 @@ class PresidentElections(commands.Cog):
 
     @commands.slash_command(
         name="pvote-info",
+        guild_ids=[config.PlasmoRPGuild.id],
+
     )
     async def vote_info(
         self,
@@ -236,6 +240,8 @@ class PresidentElections(commands.Cog):
 
     @commands.slash_command(
         name="pfvote",
+        guild_ids=[config.PlasmoRPGuild.id],
+
     )
     @commands.default_member_permissions(manage_guild=True)
     async def force_vote(
@@ -292,6 +298,7 @@ class PresidentElections(commands.Cog):
 
     @commands.slash_command(
         name="pfunvote",
+        guild_ids=[config.PlasmoRPGuild.id],
     )
     @commands.default_member_permissions(manage_guild=True)
     async def force_unvote(

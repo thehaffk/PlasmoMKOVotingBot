@@ -40,9 +40,12 @@ class MKOVoteTopView(disnake.ui.View):
             user = self.plasmo_guild.get_member(candidate.discord_id)
             embed.add_field(
                 name=f"{place}. {user.display_name if user else '❌ DELETED'}"
-                + (settings.Config.member_emoji
-                if candidate.votes_count >= settings.Config.required_mko_votes and user
-                else ""),
+                + (
+                    settings.Config.member_emoji
+                    if candidate.votes_count >= settings.Config.required_mko_votes
+                    and user
+                    else ""
+                ),
                 value=get_votes_string(candidate.votes_count),
             )
         return embed

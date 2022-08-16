@@ -14,10 +14,16 @@ class Config:
 
     vote_cooldown = 60  # In minutes
 
-    president_voting_enabled = False  # Enables president elections (commands and checks)
+    president_voting_enabled = (
+        True  # Enables president elections (commands and checks)
+    )
+    # ⚠ mko_voting_enabled must be True for using this
+    president_user_voting_enabled = (
+        True  # Allows players to vote with /pvote, instead of in-game books
+    )
 
-    required_weekly_hours = 2
-    required_mko_votes = 3
+    required_weekly_hours = 4
+    required_mko_votes = 6
 
     member_emoji = "\\🏛"
 
