@@ -23,7 +23,6 @@ class MKOVoteTopView(disnake.ui.View):
         self.page = 1
         self.plasmo_guild = plasmo_guild
         self.database = MKOVotingDatabase()
-        self.update_all_users.start()
 
     async def generate_page(self, index: int = 1) -> disnake.Embed:
         candidates = await self.database.get_candidates()
@@ -324,8 +323,7 @@ class MKOVoting(commands.Cog):
 
         await inter.response.defer(ephemeral=True)
         old_candidate_id = await self.database.get_user_vote(voter_id=voter.id)
-        if old_candidate_id:
-            await self.update_candidate(old_candidate_id)
+
 
         await self.database.set_user_vote(voter_id=voter.id, candidate_id=candidate.id)
         await self.bot.get_guild(config.DevServer.id).get_channel(
@@ -349,6 +347,8 @@ class MKOVoting(commands.Cog):
             )
 
         await self.update_candidate(candidate.id)
+        if old_candidate_id:
+            await self.update_candidate(old_candidate_id)
 
     @commands.slash_command(
         name="funvote",

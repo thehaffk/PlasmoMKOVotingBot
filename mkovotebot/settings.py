@@ -19,7 +19,7 @@ class Config:
     #     True  # Allows players to vote with /pvote, instead of in-game books
     # )
 
-    required_weekly_hours = 1
+    required_weekly_hours = 0
     required_mko_votes = 2
 
     member_emoji = "\\🏛"
