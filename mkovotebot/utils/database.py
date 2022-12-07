@@ -131,10 +131,22 @@ class MKODatabase:
                 candidates.sort(key=lambda c: c.votes_count, reverse=True)
                 return candidates
 
+    async def clear_all_votes(self):
+        logger.warning(
+            "[%s] clear_all_votes is called ",
+            self._table,
+        )
+        async with aiosqlite.connect(PATH) as db:
+            await db.execute(
+                f"""DELETE FROM {self._table}""",
+            )
+            await db.commit()
+
 
 class PresidentElectionsDatabase(MKODatabase):
     def __init__(self):
         super().__init__(table="president_votes")
+
 
 
 class MKOVotingDatabase(MKODatabase):

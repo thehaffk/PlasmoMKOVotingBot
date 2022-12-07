@@ -78,7 +78,6 @@ class PresidentUserVoting(commands.Cog):
     @commands.slash_command(
         name="punvote",
         guild_ids=[config.PlasmoRPGuild.id],
-
     )
     async def user_unvote(self, inter: ApplicationCommandInteraction):
         """

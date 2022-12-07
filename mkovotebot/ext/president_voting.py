@@ -72,6 +72,7 @@ class PresidentElections(commands.Cog):
     def __init__(self, bot: disnake.ext.commands.Bot):
         self.bot = bot
         self.database = PresidentElectionsDatabase()
+        # self.update_all_users.start()
 
     async def update_voter(self, discord_id, avoid_circular_calls=False) -> bool:
         """
@@ -151,7 +152,6 @@ class PresidentElections(commands.Cog):
     @commands.slash_command(
         name="pvote-top",
         guild_ids=[config.PlasmoRPGuild.id],
-
     )
     async def vote_top(
         self,
@@ -176,7 +176,6 @@ class PresidentElections(commands.Cog):
     @commands.slash_command(
         name="pvote-info",
         guild_ids=[config.PlasmoRPGuild.id],
-
     )
     async def vote_info(
         self,
@@ -241,7 +240,6 @@ class PresidentElections(commands.Cog):
     @commands.slash_command(
         name="pfvote",
         guild_ids=[config.PlasmoRPGuild.id],
-
     )
     @commands.default_member_permissions(manage_guild=True)
     async def force_vote(
@@ -334,6 +332,16 @@ class PresidentElections(commands.Cog):
         )
         return True
 
+    @commands.is_owner()
+    @commands.default_member_permissions(manage_roles=True)
+    @commands.slash_command(name="reset-president-voting")
+    async def reset_president_voting_command(self, inter: ApplicationCommandInteraction):
+        await inter.response.defer(ephemeral=True)
+        await self.database.clear_all_votes()
+        await inter.edit_original_message(
+            "👍 Дело сделано"
+        )
+
     @tasks.loop(hours=8)
     async def update_all_users(self):
         candidates = [
@@ -344,9 +352,6 @@ class PresidentElections(commands.Cog):
                 await self.update_voter(voter)
             await self.update_candidate(candidate)
 
-    @update_all_users.before_loop
-    async def before_printer(self):
-        await self.bot.wait_until_ready()
 
     @commands.Cog.listener("on_ready")
     async def on_ready_listener(self):

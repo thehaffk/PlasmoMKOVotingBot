@@ -9,25 +9,22 @@ class Config:
 
     # ⚠ mko_voting_enabled must be True for using this
     user_voting_enabled = (
-        False  # Allows players to vote with /vote, instead of in-game books
+        True  # Allows players to vote with /vote, instead of in-game books
     )
+    vote_cooldown = 24  # In hours
 
-    vote_cooldown = 60  # In minutes
-
-    president_voting_enabled = (
-        True  # Enables president elections (commands and checks)
-    )
+    president_voting_enabled = True  # Enables president elections (commands and checks)
     # ⚠ mko_voting_enabled must be True for using this
-    president_user_voting_enabled = (
-        True  # Allows players to vote with /pvote, instead of in-game books
-    )
+    # president_user_voting_enabled = (
+    #     True  # Allows players to vote with /pvote, instead of in-game books
+    # )
 
-    required_weekly_hours = 4
-    required_mko_votes = 6
+    required_weekly_hours = 1
+    required_mko_votes = 2
 
     member_emoji = "\\🏛"
 
-    dynamic_voting_enabled = False  # MKO ONLY
+    dynamic_voting_enabled = False  # todo
     minimum_members = 10
     maximum_members = 25
     minimum_required_votes = 1

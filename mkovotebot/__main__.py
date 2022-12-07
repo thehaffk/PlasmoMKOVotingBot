@@ -29,8 +29,8 @@ if settings.Config.mko_voting_enabled:
 if settings.Config.president_voting_enabled:
     logger.debug("Loading mkovotebot.ext.president_voting")
     bot.load_extension("mkovotebot.ext.president_voting")
-    if settings.Config.president_user_voting_enabled:
-        bot.load_extension("mkovotebot.ext.president_user_voting")
+    # if settings.Config.president_user_voting_enabled:
+    #     bot.load_extension("mkovotebot.ext.president_user_voting")
 
     database = PresidentElectionsDatabase()
     asyncio.run(database.setup())

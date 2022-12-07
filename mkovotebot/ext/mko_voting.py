@@ -76,13 +76,10 @@ class MKOVoteTopView(disnake.ui.View):
 
 
 class MKOVoting(commands.Cog):
-    """
-    About
-    """
-
     def __init__(self, bot: disnake.ext.commands.Bot):
         self.bot = bot
         self.database = MKOVotingDatabase()
+        self.update_all_users.start()
 
     async def update_voter(self, discord_id, avoid_circular_calls=False) -> bool:
         """
