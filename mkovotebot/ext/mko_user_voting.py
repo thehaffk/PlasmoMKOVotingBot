@@ -58,6 +58,7 @@ class UserVoting(commands.Cog):
         await inter.response.defer(ephemeral=True)
         if candidate.id == inter.author.id:
             await inter.edit_original_message("https://imgur.com/kA0qPqs")
+            return
 
         if (
                 inter.guild.get_role(config.PlasmoRPGuild.player_role_id)
