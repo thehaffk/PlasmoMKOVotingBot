@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-import asyncio
 from functools import lru_cache
 from typing import Union, Optional
 
@@ -30,18 +29,17 @@ async def _get_plasmo_userdata(
     elif nickname:
         user_string = "nick=" + str(nickname)
     else:
-        raise ValueError("All three parameters cannot be None")
+        raise ValueError("All three parameters are None")
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            "https://rp.plo.su/api/user/profile?" + user_string + "&fields=stats"
+            "https://plasmorp.com/api/user/profile?" + user_string + "&fields=stats"
         ) as response:
             if response.status != 200:
                 return None
             response_json = await response.json()
             if (
                 not response_json.get("status", False)
-                or response_json.get("data", {}).get("on_server", False) is False
             ):
                 return None
             data = response_json["data"]
@@ -62,16 +60,14 @@ async def get_player_hours(discord_id: int) -> float:
         return user.weekly_hours
 
 
-@lru_cache(maxsize=128)
+@lru_cache(maxsize=256)
 async def get_user(
     plasmo_id: int = None, discord_id: int = None, nickname: str = None
 ) -> Union[None, Player]:
     player = await _get_plasmo_userdata(plasmo_id, discord_id, nickname)
     if player is None:
-        player: None
         return None
     else:
-        # looks terrible, there must be some smart way to do it
         player: _Player
         return Player(
             plasmo_id=player.plasmo_id, discord_id=player.discord_id, nick=player.nick

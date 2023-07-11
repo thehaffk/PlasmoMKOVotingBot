@@ -1,28 +1,43 @@
-__version__ = "2.0.0a"
+import os
 
-DEBUG = True
+from dotenv import load_dotenv
+
+load_dotenv()
+
+__version__ = "2.1.0"
+
+DEBUG = bool(int(os.getenv("BOT_DEBUG", False)))
 DATABASE_PATH = "mkovotebot/votes.db"
 
 
 class Config:
-    mko_voting_enabled = True
+    mko_voting_enabled = bool(int(os.getenv("MKO_VOTING", True)))
 
+    user_voting_enabled = bool(
+        int(os.getenv("MKO_USER_VOTING", False))
+    )  # Allows players to vote with /vote
+    vote_cooldown = 24  # In hours
+
+    # do not touch :warning:
+    vote_cooldown += 3  # I have no idea whats wrong with datetime.utcnow().timestamp() + dont care
+
+    president_voting_enabled = bool(
+        int(os.getenv("PRESIDENT_VOTING", False))
+    )  # Enables president elections
     # ⚠ mko_voting_enabled must be True for using this
-    user_voting_enabled = (
-        False  # Allows players to vote with /vote, instead of in-game books
-    )
+    # president_user_voting_enabled = (
+    #     bool(int(os.getenv("PRESIDENT_USER_VOTING", False)))  # Allows players to vote with /pvote
+    # )
 
-    vote_cooldown = 60  # In minutes
+    mko_required_weekly_hours = int(os.getenv("MKO_WEEKLY_HOURS", 1))
+    required_mko_votes = int(os.getenv("MKO_VOTES", 6))
 
-    president_voting_enabled = False  # Enables president elections (commands and checks)
+    president_required_weekly_hours = int(os.getenv("PRESIDENT_WEEKLY_HOURS", 1))
 
-    required_weekly_hours = 2
-    required_mko_votes = 3
+    member_emoji = "\🏛"
 
-    member_emoji = "\\🏛"
-
-    dynamic_voting_enabled = False  # MKO ONLY
-    minimum_members = 10
-    maximum_members = 25
-    minimum_required_votes = 1
-    maximum_required_votes = 10
+    # dynamic_voting_enabled = False  # todo
+    # minimum_members = 10
+    # maximum_members = 25
+    # minimum_required_votes = 1
+    # maximum_required_votes = 10

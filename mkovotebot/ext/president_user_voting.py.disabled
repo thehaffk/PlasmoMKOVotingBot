@@ -1,0 +1,120 @@
+"""Cog-file for President user-voting, it`s named USER-voting because anyone can use /vote"""
+import logging
+
+import disnake
+from disnake import ApplicationCommandInteraction
+from disnake.ext import commands
+
+from mkovotebot import settings, config
+
+logger = logging.getLogger(__name__)
+
+
+class PresidentUserVoting(commands.Cog):
+    """
+    About
+    """
+
+    def __init__(self, bot: disnake.ext.commands.Bot):
+        self.bot = bot
+
+    @commands.has_role(config.PlasmoRPGuild.player_role_id)
+    @commands.slash_command(
+        name="pvote",
+    )
+    async def user_vote(
+        self, inter: ApplicationCommandInteraction, candidate: disnake.Member
+    ):
+        """
+        Проголосовать за игрока
+
+        Parameters
+        ----------
+        candidate: Игрок, за которого вы хотите проголосовать
+        inter: ApplicationCommandInteraction object
+        """
+        voter = inter.author
+        logger.info("%s called /pvote %s", inter.author.id, candidate.id)
+        if voter == candidate or voter.bot or candidate.bot:
+            return await inter.send(
+                "Я тебе просто объясню как будет, я знаю, уже откуда ты, и вижу как ты подключен, "
+                "я сейчас беру эту инфу и просто не поленюсь и пойду в полицию, и хоть у тебя и "
+                "динамический iр , но Бай-флай хранит инфо 3 года, о запросах абонентов и их подключении, "
+                "так что узнать у кого был IР в ото время дело пары минут, а дальше статья за разжигание "
+                "межнациональной розни и о нормальной работе или учёбе да и о жизни, можешь забыть, "
+                "мой тебе совет",
+                ephemeral=True,
+            )
+
+        await inter.response.defer(ephemeral=True)
+
+        await self.database.set_user_vote(voter_id=voter.id, candidate_id=candidate.id)
+        await self.bot.get_guild(config.DevServer.id).get_channel(
+            config.DevServer.log_channel_id
+        ).send(
+            f"[pres] [{voter.id}] -> [{candidate.id}] ({inter.author.id}/{inter.author})\n"
+        )
+        if await self.bot.get_cog("PresidentElections").update_voter(voter.id):
+            await inter.edit_original_message(
+                embed=disnake.Embed(
+                    title="Голос успешно изменен",
+                    description=f"Голос {voter.mention} отдан за {candidate.mention}",
+                    color=disnake.Color.dark_green(),
+                )
+            )
+        else:
+            await inter.edit_original_message(
+                embed=disnake.Embed(
+                    title="Голос обработан",
+                    description=f"Голос обработан, но сразу же аннулирован",
+                    color=disnake.Color.yellow(),
+                )
+            )
+
+        await self.bot.get_cog("PresidentElections").update_candidate(candidate.id)
+
+    @commands.has_role(config.PlasmoRPGuild.player_role_id)
+    @commands.slash_command(
+        name="punvote",
+    )
+    async def user_unvote(self, inter: ApplicationCommandInteraction):
+        """
+        Отменить свой голос
+
+        Parameters
+        ----------
+        inter: ApplicationCommandInteraction object
+        """
+        voter = inter.author
+        logger.info("%s called /pfunvote", voter.id)
+        await inter.response.defer(ephemeral=True)
+
+        old_vote = await self.database.get_user_vote(voter_id=voter.id)
+        if old_vote:
+            await self.database.set_user_vote(voter_id=voter.id, candidate_id=None)
+            await self.bot.get_cog("PresidentElections").update_candidate(old_vote)
+
+        await self.bot.get_guild(config.DevServer.id).get_channel(
+            config.DevServer.log_channel_id
+        ).send(f"[pres] [{voter.id}] -> [CLEARED] ({inter.author.id}/{inter.author})")
+        await inter.edit_original_message(
+            embed=disnake.Embed(
+                title="Голос успешно изменен",
+                description=f"Голос {voter.mention} сброшен",
+                color=disnake.Color.dark_green(),
+            )
+        )
+        return True
+
+    async def cog_load(self):
+        """
+        Called when disnake cog is loaded
+        """
+        logger.info("%s Loaded  ", __name__)
+
+
+def setup(bot):
+    """
+    Disnake internal setup function
+    """
+    bot.add_cog(PresidentUserVoting(bot))
