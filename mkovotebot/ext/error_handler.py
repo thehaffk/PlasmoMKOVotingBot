@@ -9,6 +9,7 @@ from disnake.ext.commands.errors import (
     NoPrivateMessage,
 )
 
+from mkovotebot.config import PlasmoRPGuild
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +27,11 @@ class ErrorHandler(commands.Cog):
         self, inter: disnake.ApplicationCommandInteraction, error
     ):
         if isinstance(error, MissingRole):
+            if error.missing_role == PlasmoRPGuild.player_role_id:
+                return await inter.send("https://imgur.com/PzOUMaV", ephemeral=True)
             return await inter.send(
                 embed=disnake.Embed(
-                    title="У Вас недостаточно прав.",
+                    title="Ошибка",
                     description="Вам нужно "
                     f"иметь роль <@&{error.missing_role}> для использования этой команды.",
                     color=disnake.Color.red(),
@@ -38,7 +41,7 @@ class ErrorHandler(commands.Cog):
         elif isinstance(error, MissingPermissions):
             return await inter.send(
                 embed=disnake.Embed(
-                    title="У Вас недостаточно прав.",
+                    title="Ошибка",
                     description="Вам нужно "
                     f"иметь пермишен **{error.missing_permissions[0]}** для использования этой команды.",
                     color=disnake.Color.red(),
@@ -48,9 +51,9 @@ class ErrorHandler(commands.Cog):
         elif isinstance(error, NotOwner):
             return await inter.send(
                 embed=disnake.Embed(
-                    title="У Вас недостаточно прав.",
+                    title="Ошибка",
                     description="Вам нужно быть "
-                    "администратором Plasmo или разработчиком бота для использования этой функции.",
+                    "администратором Plasmo или разработчиком бота для использования этой функции",
                     color=disnake.Color.red(),
                 ),
                 ephemeral=True,
@@ -59,7 +62,7 @@ class ErrorHandler(commands.Cog):
             return await inter.send(
                 embed=disnake.Embed(
                     title="Команда недоступна.",
-                    description="`This command cannot be used in private messages.`",
+                    description="`This command cannot be used in private messages`",
                     color=disnake.Color.red(),
                 ),
                 ephemeral=True,
@@ -68,8 +71,8 @@ class ErrorHandler(commands.Cog):
             return await inter.send(
                 embed=disnake.Embed(
                     title="Команда на кулдауне.",
-                    description=f"Попробуйте снова через {error.retry_after:.0f} секунд. "
-                                f"(Это {int(error.retry_after / 60 // 60)} ч. {int(error.retry_after // 60 % 60)} мин.)",
+                    description=f"Попробуйте снова через {round(error.retry_after)} секунд "
+                    f"(Это {int(error.retry_after / 60 // 60)} ч. {int(error.retry_after // 60 % 60)} мин.)",
                     color=disnake.Color.red(),
                 ),
                 ephemeral=True,
@@ -78,7 +81,7 @@ class ErrorHandler(commands.Cog):
             logger.error(error)
             await inter.send(
                 embed=disnake.Embed(
-                    title="Error",
+                    title="Ошибка",
                     description=f"Возникла неожиданная ошибка.\n\n`{error}`"
                     f"\n\nРепортить баги можно тут - https://discord.gg/JEnCvJKM",
                     color=disnake.Color.red(),
@@ -88,7 +91,7 @@ class ErrorHandler(commands.Cog):
             await self.bot.get_channel(969487104616845342).send(
                 embed=disnake.Embed(
                     title="⚠⚠⚠",
-                    description=f"Возникла неожиданная ошибка.\n\n`{str(error)[:900]}`",
+                    description=f"Возникла неожиданная ошибка\n\n`{str(error)[:900]}`",
                     color=disnake.Color.brand_green(),
                 ).add_field(
                     name="inter data",
@@ -107,7 +110,7 @@ class ErrorHandler(commands.Cog):
             await ctx.send(
                 embed=disnake.Embed(
                     title="Error",
-                    description=f"Возникла неожиданная ошибка.\n\n`{error}`"
+                    description=f"Возникла неожиданная ошибка\n\n`{error}`"
                     f"\n\nРепортить баги можно тут - https://discord.gg/JEnCvJKM",
                     color=disnake.Color.red(),
                 ),
@@ -116,7 +119,7 @@ class ErrorHandler(commands.Cog):
             await self.bot.get_channel(969487104616845342).send(
                 embed=disnake.Embed(
                     title="⚠⚠⚠",
-                    description=f"Возникла неожиданная ошибка.\n\n`{str(error)[:900]}`",
+                    description=f"Возникла неожиданная ошибка\n\n`{str(error)[:900]}`",
                     color=disnake.Color.brand_green(),
                 ).add_field(
                     name="inter data",

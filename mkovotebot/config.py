@@ -2,12 +2,10 @@ import os
 
 from dotenv import load_dotenv
 
-from mkovotebot.settings import DEBUG
-
 load_dotenv()
 
 TOKEN = os.getenv("TOKEN")
-DEBUG_VALUES = bool(os.getenv("BOT_DEBUG", False))
+DEBUG_VALUES = bool(int(os.getenv("DEBUG_VALUES", False)))
 
 maximum_candidates_per_page = 10
 
@@ -29,6 +27,9 @@ class PlasmoRPGuild:
     announcement_channel_id = 844505711211446282
     low_priority_announcement_channel_id = 754644298720477264
 
+class MKOStructureGuild:
+    id = 814490777526075433
+    invite_url = "https://discord.gg/YwRDyBCAJD"
 
 class TestServer:
     """
@@ -46,6 +47,8 @@ class TestServer:
 
     announcement_channel_id = 969280776459935884
     low_priority_announcement_channel_id = 969291098348458004
+
+
 
 
 if DEBUG_VALUES:
