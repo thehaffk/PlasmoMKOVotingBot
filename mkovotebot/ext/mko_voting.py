@@ -65,7 +65,13 @@ class MKOVoteTopView(disnake.ui.View):
     async def next_page(
         self, button: disnake.ui.Button, inter: disnake.MessageInteraction
     ):
-        self.page += 1
+        candidates = await get_mko_candidates()
+        maximum_page = len(candidates) // config.maximum_candidates_per_page + int(
+            bool(len(candidates) % config.maximum_candidates_per_page)
+        )
+
+        if self.page < maximum_page:
+            self.page += 1
         embed = await self.generate_page(self.page)
         await inter.response.edit_message(embed=embed, view=self)
 
@@ -80,11 +86,11 @@ class MKOVoting(commands.Cog):
 
         :return - True if vote is active
         """
+        await self.bot.wait_until_ready()
         plasmo_guild = self.bot.get_guild(config.PlasmoRPGuild.id)
         user = plasmo_guild.get_member(discord_id)
         current_vote = await models.MKOVote.objects.filter(voter_id=discord_id).first()
         if current_vote is None:
-            print('no vote return false')
             return False
 
         if (
@@ -101,7 +107,7 @@ class MKOVoting(commands.Cog):
             logger.debug("Plasmo API Error")
             return True
 
-        if played_hours < settings.Config.required_weekly_hours:
+        if played_hours < settings.Config.mko_required_weekly_hours:
             await models.MKOVote.objects.filter(voter_id=discord_id).delete()
             await plasmo_guild.get_channel(
                 config.PlasmoRPGuild.low_priority_announcement_channel_id
@@ -109,11 +115,13 @@ class MKOVoting(commands.Cog):
                 content=user.mention,
                 embed=disnake.Embed(
                     color=0xE02443,
-                    description=f"Чтобы голосовать нужно наиграть {settings.Config.required_weekly_hours} ч."
+                    description=f"Чтобы голосовать нужно наиграть {settings.Config.mko_required_weekly_hours} ч."
                                 f" за неделю \n "
                     f"У {user.mention} - {round(played_hours, 1)} ч.",
                 ).set_author(name=f"Голос {escape_markdown(user.display_name)} аннулирован",
-                             icon_url="https://plasmorp.com/avatar/" + user.display_name),
+                             icon_url="https://plasmorp.com/avatar/" + user.display_name).set_footer(
+                    text="Голосование МКО"
+                ),
             )
             await self.update_candidate(current_vote.candidate_id, update_voters=False)
             return False
@@ -126,6 +134,8 @@ class MKOVoting(commands.Cog):
 
         :return - True if candidate is parliament member
         """
+        await self.bot.wait_until_ready()
+
         votes = await models.MKOVote.objects.filter(candidate_id=discord_id).all()
 
         candidate = self.bot.get_guild(config.PlasmoRPGuild.id).get_member(discord_id)
@@ -152,7 +162,9 @@ class MKOVoting(commands.Cog):
                         icon_url="https://plasmorp.com/avatar/"
                         + (api_profile.nick if api_profile is not None else "PlasmoTools"),
                         name=f"Голоса аннулированы"
-                    ),
+                    ).set_footer(
+                    text="Голосование МКО"
+                ),
                 )
                 logger.debug("%s is missing player role, resetting all votes", discord_id)
             return False
@@ -231,7 +243,13 @@ class MKOVoting(commands.Cog):
         inter: ApplicationCommandInteraction object
         """
 
-        await inter.response.defer(ephemeral=True)
+        await inter.send(
+            embed=disnake.Embed(
+                description="<a:loading2:995519203140456528> Подождите, генерирую страницу",
+                color=disnake.Color.dark_green()
+            ),
+            ephemeral=True
+        )
 
         view = MKOVoteTopView(plasmo_guild=inter.guild)
         await inter.edit_original_message(
@@ -330,12 +348,7 @@ class MKOVoting(commands.Cog):
         """
         if voter == candidate or voter.bot or candidate.bot:
             return await inter.send(
-                "Я тебе просто объясню как будет, я знаю, уже откуда ты, и вижу как ты подключен, "
-                "я сейчас беру эту инфу и просто не поленюсь и пойду в полицию, и хоть у тебя и "
-                "динамический iр , но Бай-флай хранит инфо 3 года, о запросах абонентов и их подключении, "
-                "так что узнать у кого был IР в ото время дело пары минут, а дальше статья за разжигание "
-                "межнациональной розни и о нормальной работе или учёбе да и о жизни, можешь забыть, "
-                "мой тебе совет",
+                "Правилами голосования нельзя голосовать за самого себя и ботов",
                 ephemeral=True,
             )
 
@@ -353,7 +366,7 @@ class MKOVoting(commands.Cog):
         await self.bot.get_guild(config.DevServer.id).get_channel(
             config.DevServer.log_channel_id
         ).send(f"[mko] [{voter.id}] -> [{candidate.id}] ({inter.author.id}/{inter.author})\n"
-               f"[{inter.author.display_name}] -> [{candidate.display_name}]")
+               f"[{voter.display_name}] -> [{candidate.display_name}]")
         if await self.update_voter(voter.id):
             await inter.edit_original_message(
                 embed=disnake.Embed(
@@ -403,7 +416,7 @@ class MKOVoting(commands.Cog):
             await self.bot.get_guild(config.DevServer.id).get_channel(
                 config.DevServer.log_channel_id
             ).send(f"[mko] [{voter.id}] -> [CLEARED] ({inter.author.id}/{inter.author})\n"
-                   f"[{voter.display_name}]")
+                   f"[{voter.display_name}] -> [CLEARED]")
         await inter.edit_original_message(
             embed=disnake.Embed(
                 title="Голос успешно изменен",

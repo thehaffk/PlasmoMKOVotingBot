@@ -17,20 +17,24 @@ class Config:
         int(os.getenv("MKO_USER_VOTING", False))
     )  # Allows players to vote with /vote
     vote_cooldown = 24  # In hours
-    vote_cooldown += 3  # I have no idea whats wrong with datetime.utcnow().timestamp() + i dont care
+
+    # do not touch :warning:
+    vote_cooldown += 3  # I have no idea whats wrong with datetime.utcnow().timestamp() + dont care
 
     president_voting_enabled = bool(
         int(os.getenv("PRESIDENT_VOTING", False))
-    )  # Enables president elections (commands and checks)
+    )  # Enables president elections
     # ⚠ mko_voting_enabled must be True for using this
     # president_user_voting_enabled = (
     #     bool(int(os.getenv("PRESIDENT_USER_VOTING", False)))  # Allows players to vote with /pvote
     # )
 
-    required_weekly_hours = int(os.getenv("MKO_WEEKLY_HOURS", 1))
+    mko_required_weekly_hours = int(os.getenv("MKO_WEEKLY_HOURS", 1))
     required_mko_votes = int(os.getenv("MKO_VOTES", 6))
 
-    member_emoji = "\\🏛"
+    president_required_weekly_hours = int(os.getenv("PRESIDENT_WEEKLY_HOURS", 1))
+
+    member_emoji = "\🏛"
 
     # dynamic_voting_enabled = False  # todo
     # minimum_members = 10

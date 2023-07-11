@@ -53,7 +53,9 @@ class ErrorHandler(commands.Cog):
                 embed=disnake.Embed(
                     title="Ошибка",
                     description="Вам нужно быть "
-                    "администратором Plasmo или разработчиком бота для использования этой функции",
+                    "администратором бота для использования этой функции\n\n"
+                    "Если вам нужно использовать эту функцию,"
+                                " обратитесь в тикеты Plasmo или Digital Drugs  Technologies",
                     color=disnake.Color.red(),
                 ),
                 ephemeral=True,

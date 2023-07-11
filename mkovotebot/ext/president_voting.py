@@ -1,18 +1,17 @@
-"""Cog-file for MKO voting"""
 import logging
 
 import disnake
 from disnake import ApplicationCommandInteraction
 from disnake.ext import commands, tasks
+from disnake.utils import escape_markdown
 
 from mkovotebot import settings, config
-from mkovotebot.utils import PresidentElectionsDatabase, api, get_votes_string
+from mkovotebot.utils import api
+from mkovotebot.utils.converters import get_votes_string
+from mkovotebot.utils.database import get_election_candidates
+from mkovotebot.utils.models import PresidentVote
 
 logger = logging.getLogger(__name__)
-
-
-# TODO: This is terrible, just a copy of mko_voting.py, i don`t know what to do with it...
-
 
 class PresidentVoteTopView(disnake.ui.View):
     def __init__(
@@ -22,10 +21,9 @@ class PresidentVoteTopView(disnake.ui.View):
         super().__init__(timeout=600)
         self.page = 1
         self.plasmo_guild = plasmo_guild
-        self.database = PresidentElectionsDatabase()
 
     async def generate_page(self, index: int = 1) -> disnake.Embed:
-        candidates = await self.database.get_candidates()
+        candidates = await get_election_candidates()
         embed = disnake.Embed(
             title="Статистика выборов в президенты", color=disnake.Color.dark_green()
         )
@@ -39,7 +37,7 @@ class PresidentVoteTopView(disnake.ui.View):
             place = (place + 1) + config.maximum_candidates_per_page * (index - 1)
             user = self.plasmo_guild.get_member(candidate.discord_id)
             embed.add_field(
-                name=f"{place}. {user.display_name if user else '❌ DELETED'}",
+                name=f"{place}. {user.display_name if user else '❌ not found'}",
                 value=get_votes_string(candidate.votes_count),
             )
         return embed
@@ -57,7 +55,7 @@ class PresidentVoteTopView(disnake.ui.View):
     async def next_page(
         self, button: disnake.ui.Button, inter: disnake.MessageInteraction
     ):
-        candidates = await self.database.get_candidates()
+        candidates = await get_election_candidates()
         maximum_page = len(candidates) // config.maximum_candidates_per_page + int(
             bool(len(candidates) % config.maximum_candidates_per_page)
         )
@@ -71,19 +69,19 @@ class PresidentVoteTopView(disnake.ui.View):
 class PresidentElections(commands.Cog):
     def __init__(self, bot: disnake.ext.commands.Bot):
         self.bot = bot
-        self.database = PresidentElectionsDatabase()
-        # self.update_all_users.start()
 
-    async def update_voter(self, discord_id, avoid_circular_calls=False) -> bool:
+    async def update_voter(self, discord_id: int) -> bool:
         """
         Check voter - hours and player role
 
-        :return - True if voter`s vote is active
+        :return - True if vote is active
         """
+        await self.bot.wait_until_ready()
+
         plasmo_guild = self.bot.get_guild(config.PlasmoRPGuild.id)
         user = plasmo_guild.get_member(discord_id)
-        candidate_id = await self.database.get_user_vote(discord_id)
-        if candidate_id is None:
+        current_vote = await PresidentVote.objects.filter(voter_id=discord_id).first()
+        if current_vote is None:
             return False
 
         if (
@@ -91,67 +89,80 @@ class PresidentElections(commands.Cog):
             or plasmo_guild.get_role(config.PlasmoRPGuild.player_role_id)
             not in user.roles
         ):
-            await self.database.set_user_vote(voter_id=discord_id, candidate_id=None)
-            if not avoid_circular_calls:
-                await self.update_candidate(candidate_id)
+            await PresidentVote.objects.filter(voter_id=discord_id).delete()
+            await self.update_candidate(current_vote.candidate_id, update_voters=False)
             return False
 
         played_hours = await api.get_player_hours(discord_id)
         if played_hours == -1:  # Plasmo API Error
+            logger.debug("Plasmo API Error")
             return True
 
-        if played_hours < settings.Config.required_weekly_hours:
-            await self.database.set_user_vote(voter_id=discord_id, candidate_id=None)
+        if played_hours < settings.Config.president_required_weekly_hours:
+            await PresidentVote.objects.filter(voter_id=discord_id).delete()
             await plasmo_guild.get_channel(
                 config.PlasmoRPGuild.low_priority_announcement_channel_id
             ).send(
                 content=user.mention,
                 embed=disnake.Embed(
-                    color=disnake.Color.dark_red(),
-                    title="❌ Ваш голос аннулирован",
-                    description=f"Чтобы голосовать на выборах на выборах нужно наиграть "
-                    f"хотя бы {settings.Config.required_weekly_hours} ч. за неделю \n "
-                    f"||У вас - {round(played_hours, 2)} ч.||",
-                ).set_thumbnail(url="https://rp.plo.su/avatar/" + user.display_name),
+                    color=0xE02443,
+                    description=f"Чтобы голосовать нужно наиграть {settings.Config.president_required_weekly_hours} ч."
+                                f" за неделю \n "
+                    f"У {user.mention} - {round(played_hours, 1)} ч.",
+                ).set_author(name=f"Голос {escape_markdown(user.display_name)} аннулирован",
+                             icon_url="https://plasmorp.com/avatar/" + user.display_name).set_footer(
+                    text="Выборы президента"
+                ),
             )
-            await self.update_candidate(candidate_id)
+            await self.update_candidate(current_vote.candidate_id, update_voters=False)
             return False
 
         return True
-
-    async def update_candidate(self, discord_id) -> bool:
+    async def update_candidate(self, discord_id: int, update_voters: bool = False):
         """
         Check candidate - hours and player role
         """
-        votes = await self.database.get_candidate_votes(discord_id)
-        user = self.bot.get_guild(config.PlasmoRPGuild.id).get_member(discord_id)
-        if user is None or config.PlasmoRPGuild.player_role_id not in [
-            role.id for role in user.roles
-        ]:
-            await self.update_voter(discord_id, avoid_circular_calls=True)
-            if len(votes) > 0:
-                plasmo_user = await api.get_user(discord_id=discord_id)
+        await self.bot.wait_until_ready()
+
+        votes = await PresidentVote.objects.filter(candidate_id=discord_id).all()
+
+        candidate = self.bot.get_guild(config.PlasmoRPGuild.id).get_member(discord_id)
+        if (
+            candidate is None
+            or candidate.guild.get_role(config.PlasmoRPGuild.player_role_id)
+            not in candidate.roles
+        ):
+            await PresidentVote.objects.filter(candidate_id=discord_id).delete()
+            if votes:
+                logger.debug("%s is missing player role, resetting all votes", discord_id)
+                api_profile = await api.get_user(discord_id=discord_id)
                 await self.bot.get_guild(config.PlasmoRPGuild.id).get_channel(
-                    config.PlasmoRPGuild.announcement_channel_id
+                    config.PlasmoRPGuild.low_priority_announcement_channel_id
                 ).send(
-                    content=(", ".join([f"<@{user_id}>" for user_id in votes])),
+                    content=(", ".join([f"<@{vote.voter_id}>" for vote in votes])),
                     embed=disnake.Embed(
-                        color=disnake.Color.dark_red(),
-                        title="❌ Голоса аннулированны",
-                        description=f"У **{plasmo_user.nick if plasmo_user is not None else 'кандидата в президенты'}** "
-                        f"нет роли игрока на Plasmo RP, все голоса аннулированы",
-                    ).set_thumbnail(
-                        url="https://rp.plo.su/avatar/"
-                        + (plasmo_user.nick if plasmo_user is not None else "___")
+                        color=0xE02443,
+                        description=f"У **"
+                                    f"{escape_markdown(api_profile.nick) if api_profile is not None else 'кандидата'}"
+                                    f"** нет роли игрока, все голоса аннулированы",
+                    ).set_author(
+                        icon_url="https://plasmorp.com/avatar/"
+                        + (api_profile.nick if api_profile is not None else "PlasmoTools"),
+                        name=f"Голоса аннулированы"
+                    ).set_footer(
+                        text="Выборы президента"
                     ),
                 )
-            logger.debug("Unable to get %s, resetting all votes", discord_id)
-            await self.database.reset_candidate_votes(discord_id)
-            return False
+            return
+
+        if update_voters:
+            for vote in votes:
+                await self.update_voter(discord_id=vote.voter_id)
+            votes = await PresidentVote.objects.filter(candidate_id=discord_id).all()
 
     @commands.slash_command(
         name="pvote-top",
-        guild_ids=[config.PlasmoRPGuild.id],
+        dm_permission=False
     )
     async def vote_top(
         self,
@@ -165,7 +176,13 @@ class PresidentElections(commands.Cog):
         inter: ApplicationCommandInteraction object
         """
 
-        await inter.response.defer(ephemeral=True)
+        await inter.send(
+            embed=disnake.Embed(
+                description="<a:loading2:995519203140456528> Подождите, генерирую страницу",
+                color=disnake.Color.dark_green()
+            ),
+            ephemeral=True
+        )
 
         view = PresidentVoteTopView(inter.guild)
         await inter.edit_original_message(
@@ -175,7 +192,6 @@ class PresidentElections(commands.Cog):
 
     @commands.slash_command(
         name="pvote-info",
-        guild_ids=[config.PlasmoRPGuild.id],
     )
     async def vote_info(
         self,
@@ -190,48 +206,50 @@ class PresidentElections(commands.Cog):
         user: Игрок
         inter: ApplicationCommandInteraction object
         """
+        await inter.send(
+            embed=disnake.Embed(
+                description="<a:loading2:995519203140456528> Подождите, обновляю информацию и генерирую профиль",
+                color=disnake.Color.dark_green()
+            ),
+            ephemeral=True
+        )
 
         if (
             user.guild.get_role(config.PlasmoRPGuild.player_role_id) not in user.roles
             or user.bot
         ):
             await self.update_candidate(user.id)
-            return await inter.send(
+            return await inter.edit_original_response(
                 embed=disnake.Embed(
                     color=disnake.Color.dark_red(),
                     title="❌ Ошибка",
                     description="Невозможно получить статистику у пользователя без проходки",
                 ),
-                ephemeral=True,
             )
-
-        await inter.response.defer(ephemeral=True)
 
         await self.update_voter(user.id)
         await self.update_candidate(user.id)
 
-        voted_user = await self.database.get_user_vote(user.id)
-        if voted_user is not None:
-            user_vote_string = f"Игрок проголосовал за <@{voted_user}>"
+        vote = await PresidentVote.objects.filter(voter_id=user.id).first()
+        if vote is not None:
+            user_vote_string = f"Игрок проголосовал за <@{vote.candidate_id}>"
         else:
             user_vote_string = "Игрок ни за кого не проголосовал"
 
+        candidate_votes = await PresidentVote.objects.filter(candidate_id=user.id).all()
         voters_list = []
-        for user_id in await self.database.get_candidate_votes(user.id):
-            if not await self.update_voter(user_id):
-                continue
-            voters_list.append(f"<@{user_id}>")
-
-        voters = await self.database.get_candidate_votes(user.id)
+        for vote in candidate_votes:
+            voter = user.guild.get_member(vote.voter_id)
+            voters_list.append(escape_markdown(voter.display_name))
 
         user_info_embed = disnake.Embed(
             color=disnake.Color.dark_green(),
             title=f"Статистика {user.display_name}",
             description=user_vote_string,
         )
-        if len(voters):
+        if len(candidate_votes):
             user_info_embed.add_field(
-                name=f"За {user.display_name} проголосовало: {len(voters)}",
+                name=f"За {escape_markdown(user.display_name)} проголосовало: {len(candidate_votes)}",
                 value=", ".join(voters_list),
                 inline=False,
             )
@@ -239,7 +257,6 @@ class PresidentElections(commands.Cog):
 
     @commands.slash_command(
         name="pfvote",
-        guild_ids=[config.PlasmoRPGuild.id],
     )
     @commands.default_member_permissions(manage_guild=True)
     async def force_vote(
@@ -254,27 +271,28 @@ class PresidentElections(commands.Cog):
         Parameters
         ----------
         voter: Избиратель
-        candidate: ID Избираемый игрок
+        candidate: Избираемый игрок
         inter: ApplicationCommandInteraction object
         """
         logger.info("%s called /pfvote %s %s", inter.author.id, voter.id, candidate.id)
         if voter == candidate or voter.bot or candidate.bot:
             return await inter.send(
-                "Я тебе просто объясню как будет, я знаю, уже откуда ты, и вижу как ты подключен, "
-                "я сейчас беру эту инфу и просто не поленюсь и пойду в полицию, и хоть у тебя и "
-                "динамический iр , но Бай-флай хранит инфо 3 года, о запросах абонентов и их подключении, "
-                "так что узнать у кого был IР в ото время дело пары минут, а дальше статья за разжигание "
-                "межнациональной розни и о нормальной работе или учёбе да и о жизни, можешь забыть, "
-                "мой тебе совет",
+                "Правилами голосования запрещено голосовать за себя и ботов",
                 ephemeral=True,
             )
 
         await inter.response.defer(ephemeral=True)
 
-        await self.database.set_user_vote(voter_id=voter.id, candidate_id=candidate.id)
+        await PresidentVote.objects.update_or_create(
+            voter_id=voter.id,
+            defaults={
+                "candidate_id": candidate.id
+            }
+        )
         await self.bot.get_guild(config.DevServer.id).get_channel(
             config.DevServer.log_channel_id
-        ).send(f"[{voter.id}] -> [{candidate.id}] ({inter.author.id}/{inter.author})")
+        ).send(f"[pres] [{voter.id}] -> [{candidate.id}] ({inter.author.id}/{inter.author})\n"
+               f"[{voter.display_name}] -> [{candidate.display_name}]")
         if await self.update_voter(voter.id):
             await inter.edit_original_message(
                 embed=disnake.Embed(
@@ -296,7 +314,6 @@ class PresidentElections(commands.Cog):
 
     @commands.slash_command(
         name="pfunvote",
-        guild_ids=[config.PlasmoRPGuild.id],
     )
     @commands.default_member_permissions(manage_guild=True)
     async def force_unvote(
@@ -315,14 +332,15 @@ class PresidentElections(commands.Cog):
         logger.info("%s called /pfunvote %s", inter.author.id, voter.id)
         await inter.response.defer(ephemeral=True)
 
-        old_vote = await self.database.get_user_vote(voter_id=voter.id)
+        old_vote = await PresidentVote.objects.filter(voter_id=voter.id).first()
         if old_vote:
-            await self.database.set_user_vote(voter_id=voter.id, candidate_id=None)
-            await self.update_candidate(old_vote)
+            await PresidentVote.objects.filter(voter_id=voter.id).delete()
+            await self.update_candidate(old_vote.candidate_id)
 
         await self.bot.get_guild(config.DevServer.id).get_channel(
             config.DevServer.log_channel_id
-        ).send(f"[{voter.id}] -> [CLEARED] ({inter.author.id}/{inter.author})")
+        ).send(f"[pres] [{voter.id}] -> [CLEARED] ({inter.author.id}/{inter.author})\n"
+               f"[{voter.display_name}] -> [CLEARED]")
         await inter.edit_original_message(
             embed=disnake.Embed(
                 title="Голос успешно изменен",
@@ -334,28 +352,33 @@ class PresidentElections(commands.Cog):
 
     @commands.is_owner()
     @commands.default_member_permissions(manage_roles=True)
-    @commands.slash_command(name="reset-president-voting")
-    async def reset_president_voting_command(self, inter: ApplicationCommandInteraction):
+    @commands.slash_command(name="reset-president-voting", guild_ids=[config.PlasmoRPGuild.id, config.TestServer.id])
+    async def reset_president_voting_command(
+        self, inter: ApplicationCommandInteraction
+    ):
         await inter.response.defer(ephemeral=True)
-        await self.database.clear_all_votes()
-        await inter.edit_original_message(
-            "👍 Дело сделано"
-        )
+        await PresidentVote.objects.delete()
+
+        await inter.edit_original_message("👍 Дело сделано")
+
+    async def update_all_users(self):
+        candidates = set([
+            vote.candidate_id for vote in await PresidentVote.objects.all()
+        ])
+        for candidate_id in candidates:
+            await self.update_candidate(candidate_id, update_voters=True)
 
     @tasks.loop(hours=8)
-    async def update_all_users(self):
-        candidates = [
-            candidate.discord_id for candidate in await self.database.get_candidates()
-        ]
-        for candidate in candidates:
-            for voter in await self.database.get_candidate_votes(candidate):
-                await self.update_voter(voter)
-            await self.update_candidate(candidate)
+    async def update_all_users_task(self):
+        await self.update_all_users()
 
-
+    @update_all_users_task.before_loop
+    async def before_task(self):
+        await self.bot.wait_until_ready()
     @commands.Cog.listener("on_ready")
     async def on_ready_listener(self):
-        await self.update_all_users()
+        if not self.update_all_users_task.is_running():
+            self.update_all_users_task.start()
 
     async def cog_load(self):
         """
