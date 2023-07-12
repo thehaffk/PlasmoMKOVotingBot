@@ -109,7 +109,7 @@ class PresidentElections(commands.Cog):
                     description=f"Чтобы голосовать нужно наиграть {settings.Config.president_required_weekly_hours} ч."
                                 f" за неделю \n "
                     f"У {user.mention} - {round(played_hours, 1)} ч.",
-                ).set_author(name=f"Голос {escape_markdown(user.display_name)} аннулирован",
+                ).set_author(name=f"Голос {user.display_name} аннулирован",
                              icon_url="https://plasmorp.com/avatar/" + user.display_name).set_footer(
                     text="Выборы президента"
                 ),
@@ -158,7 +158,6 @@ class PresidentElections(commands.Cog):
         if update_voters:
             for vote in votes:
                 await self.update_voter(discord_id=vote.voter_id)
-            votes = await PresidentVote.objects.filter(candidate_id=discord_id).all()
 
     @commands.slash_command(
         name="pvote-top",
@@ -249,7 +248,7 @@ class PresidentElections(commands.Cog):
         )
         if len(candidate_votes):
             user_info_embed.add_field(
-                name=f"За {escape_markdown(user.display_name)} проголосовало: {len(candidate_votes)}",
+                name=f"За {user.display_name} проголосовало: {len(candidate_votes)}",
                 value=", ".join(voters_list),
                 inline=False,
             )

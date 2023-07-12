@@ -118,7 +118,7 @@ class MKOVoting(commands.Cog):
                     description=f"Чтобы голосовать нужно наиграть {settings.Config.mko_required_weekly_hours} ч."
                                 f" за неделю \n "
                     f"У {user.mention} - {round(played_hours, 1)} ч.",
-                ).set_author(name=f"Голос {escape_markdown(user.display_name)} аннулирован",
+                ).set_author(name=f"Голос {user.display_name} аннулирован",
                              icon_url="https://plasmorp.com/avatar/" + user.display_name).set_footer(
                     text="Голосование МКО"
                 ),
@@ -170,9 +170,11 @@ class MKOVoting(commands.Cog):
             return False
 
         if update_voters:
+            updated_votes = []
             for vote in votes:
-                await self.update_voter(discord_id=vote.voter_id)
-            votes = await models.MKOVote.objects.filter(candidate_id=discord_id).all()
+                if await self.update_voter(discord_id=vote.voter_id):
+                    updated_votes.append(vote)
+            votes = updated_votes
 
         mko_member_role = candidate.guild.get_role(config.PlasmoRPGuild.mko_member_role_id)
         if len(votes) >= settings.Config.required_mko_votes:
@@ -321,7 +323,7 @@ class MKOVoting(commands.Cog):
         )
         if len(candidate_votes):
             user_info_embed.add_field(
-                name=f"За {escape_markdown(user.display_name)} проголосовало: {len(candidate_votes)}",
+                name=f"За {user.display_name} проголосовало: {len(candidate_votes)}",
                 value=", ".join(voters_list),
                 inline=False,
             )
