@@ -80,7 +80,7 @@ class MKOVoting(commands.Cog):
     def __init__(self, bot: disnake.ext.commands.Bot):
         self.bot = bot
 
-    async def update_voter(self, discord_id: int) -> bool:
+    async def update_voter(self, discord_id: int, from_uc: bool = False) -> bool:
         """
         Check voter - hours and player role
 
@@ -123,7 +123,8 @@ class MKOVoting(commands.Cog):
                     text="Голосование МКО"
                 ),
             )
-            await self.update_candidate(current_vote.candidate_id, update_voters=False)
+            if not from_uc:
+                await self.update_candidate(current_vote.candidate_id, update_voters=False)
             return False
 
         return True
@@ -172,7 +173,7 @@ class MKOVoting(commands.Cog):
         if update_voters:
             updated_votes = []
             for vote in votes:
-                if await self.update_voter(discord_id=vote.voter_id):
+                if await self.update_voter(discord_id=vote.voter_id, from_uc=True):
                     updated_votes.append(vote)
             votes = updated_votes
 
