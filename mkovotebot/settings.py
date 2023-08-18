@@ -19,7 +19,9 @@ class Config:
     vote_cooldown = 24  # In hours
 
     # do not touch :warning:
-    vote_cooldown += 3  # I have no idea whats wrong with datetime.utcnow().timestamp() + dont care
+    vote_cooldown += (
+        3  # I have no idea whats wrong with datetime.utcnow().timestamp() + dont care
+    )
 
     president_voting_enabled = bool(
         int(os.getenv("PRESIDENT_VOTING", False))

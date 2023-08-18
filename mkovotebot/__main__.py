@@ -1,8 +1,7 @@
+import asyncio
 import logging
 
-import asyncio
-
-from mkovotebot import settings, config, log
+from mkovotebot import config, log, settings
 from mkovotebot.bot import MKOVoteBot
 from mkovotebot.utils import models
 

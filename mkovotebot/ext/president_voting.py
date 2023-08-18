@@ -5,13 +5,14 @@ from disnake import ApplicationCommandInteraction
 from disnake.ext import commands, tasks
 from disnake.utils import escape_markdown
 
-from mkovotebot import settings, config
+from mkovotebot import config, settings
 from mkovotebot.utils import api
 from mkovotebot.utils.converters import get_votes_string
 from mkovotebot.utils.database import get_election_candidates
 from mkovotebot.utils.models import PresidentVote
 
 logger = logging.getLogger(__name__)
+
 
 class PresidentVoteTopView(disnake.ui.View):
     def __init__(
@@ -107,17 +108,20 @@ class PresidentElections(commands.Cog):
                 embed=disnake.Embed(
                     color=0xE02443,
                     description=f"Чтобы голосовать нужно наиграть {settings.Config.president_required_weekly_hours} ч."
-                                f" за неделю \n "
+                    f" за неделю \n "
                     f"У {user.mention} - {round(played_hours, 1)} ч.",
-                ).set_author(name=f"Голос {user.display_name} аннулирован",
-                             icon_url="https://plasmorp.com/avatar/" + user.display_name).set_footer(
-                    text="Выборы президента"
-                ),
+                )
+                .set_author(
+                    name=f"Голос {user.display_name} аннулирован",
+                    icon_url="https://plasmorp.com/avatar/" + user.display_name,
+                )
+                .set_footer(text="Выборы президента"),
             )
             await self.update_candidate(current_vote.candidate_id, update_voters=False)
             return False
 
         return True
+
     async def update_candidate(self, discord_id: int, update_voters: bool = False):
         """
         Check candidate - hours and player role
@@ -134,7 +138,9 @@ class PresidentElections(commands.Cog):
         ):
             await PresidentVote.objects.filter(candidate_id=discord_id).delete()
             if votes:
-                logger.debug("%s is missing player role, resetting all votes", discord_id)
+                logger.debug(
+                    "%s is missing player role, resetting all votes", discord_id
+                )
                 api_profile = await api.get_user(discord_id=discord_id)
                 await self.bot.get_guild(config.PlasmoRPGuild.id).get_channel(
                     config.PlasmoRPGuild.low_priority_announcement_channel_id
@@ -143,15 +149,19 @@ class PresidentElections(commands.Cog):
                     embed=disnake.Embed(
                         color=0xE02443,
                         description=f"У **"
-                                    f"{escape_markdown(api_profile.nick) if api_profile is not None else 'кандидата'}"
-                                    f"** нет роли игрока, все голоса аннулированы",
-                    ).set_author(
+                        f"{escape_markdown(api_profile.nick) if api_profile is not None else 'кандидата'}"
+                        f"** нет роли игрока, все голоса аннулированы",
+                    )
+                    .set_author(
                         icon_url="https://plasmorp.com/avatar/"
-                        + (api_profile.nick if api_profile is not None else "PlasmoTools"),
-                        name=f"Голоса аннулированы"
-                    ).set_footer(
-                        text="Выборы президента"
-                    ),
+                        + (
+                            api_profile.nick
+                            if api_profile is not None
+                            else "PlasmoTools"
+                        ),
+                        name=f"Голоса аннулированы",
+                    )
+                    .set_footer(text="Выборы президента"),
                 )
             return
 
@@ -159,10 +169,7 @@ class PresidentElections(commands.Cog):
             for vote in votes:
                 await self.update_voter(discord_id=vote.voter_id)
 
-    @commands.slash_command(
-        name="pvote-top",
-        dm_permission=False
-    )
+    @commands.slash_command(name="pvote-top", dm_permission=False)
     async def vote_top(
         self,
         inter: ApplicationCommandInteraction,
@@ -178,9 +185,9 @@ class PresidentElections(commands.Cog):
         await inter.send(
             embed=disnake.Embed(
                 description="<a:loading2:995519203140456528> Подождите, генерирую страницу",
-                color=disnake.Color.dark_green()
+                color=disnake.Color.dark_green(),
             ),
-            ephemeral=True
+            ephemeral=True,
         )
 
         view = PresidentVoteTopView(inter.guild)
@@ -208,9 +215,9 @@ class PresidentElections(commands.Cog):
         await inter.send(
             embed=disnake.Embed(
                 description="<a:loading2:995519203140456528> Подождите, обновляю информацию и генерирую профиль",
-                color=disnake.Color.dark_green()
+                color=disnake.Color.dark_green(),
             ),
-            ephemeral=True
+            ephemeral=True,
         )
 
         if (
@@ -283,15 +290,14 @@ class PresidentElections(commands.Cog):
         await inter.response.defer(ephemeral=True)
 
         await PresidentVote.objects.update_or_create(
-            voter_id=voter.id,
-            defaults={
-                "candidate_id": candidate.id
-            }
+            voter_id=voter.id, defaults={"candidate_id": candidate.id}
         )
         await self.bot.get_guild(config.DevServer.id).get_channel(
             config.DevServer.log_channel_id
-        ).send(f"[pres] [{voter.id}] -> [{candidate.id}] ({inter.author.id}/{inter.author})\n"
-               f"[{voter.display_name}] -> [{candidate.display_name}]")
+        ).send(
+            f"[pres] [{voter.id}] -> [{candidate.id}] ({inter.author.id}/{inter.author})\n"
+            f"[{voter.display_name}] -> [{candidate.display_name}]"
+        )
         if await self.update_voter(voter.id):
             await inter.edit_original_message(
                 embed=disnake.Embed(
@@ -338,8 +344,10 @@ class PresidentElections(commands.Cog):
 
         await self.bot.get_guild(config.DevServer.id).get_channel(
             config.DevServer.log_channel_id
-        ).send(f"[pres] [{voter.id}] -> [CLEARED] ({inter.author.id}/{inter.author})\n"
-               f"[{voter.display_name}] -> [CLEARED]")
+        ).send(
+            f"[pres] [{voter.id}] -> [CLEARED] ({inter.author.id}/{inter.author})\n"
+            f"[{voter.display_name}] -> [CLEARED]"
+        )
         await inter.edit_original_message(
             embed=disnake.Embed(
                 title="Голос успешно изменен",
@@ -351,7 +359,10 @@ class PresidentElections(commands.Cog):
 
     @commands.is_owner()
     @commands.default_member_permissions(manage_roles=True)
-    @commands.slash_command(name="reset-president-voting", guild_ids=[config.PlasmoRPGuild.id, config.TestServer.id])
+    @commands.slash_command(
+        name="reset-president-voting",
+        guild_ids=[config.PlasmoRPGuild.id, config.TestServer.id],
+    )
     async def reset_president_voting_command(
         self, inter: ApplicationCommandInteraction
     ):
@@ -361,9 +372,9 @@ class PresidentElections(commands.Cog):
         await inter.edit_original_message("👍 Дело сделано")
 
     async def update_all_users(self):
-        candidates = set([
-            vote.candidate_id for vote in await PresidentVote.objects.all()
-        ])
+        candidates = set(
+            [vote.candidate_id for vote in await PresidentVote.objects.all()]
+        )
         for candidate_id in candidates:
             await self.update_candidate(candidate_id, update_voters=True)
 
@@ -374,6 +385,7 @@ class PresidentElections(commands.Cog):
     @update_all_users_task.before_loop
     async def before_task(self):
         await self.bot.wait_until_ready()
+
     @commands.Cog.listener("on_ready")
     async def on_ready_listener(self):
         if not self.update_all_users_task.is_running():

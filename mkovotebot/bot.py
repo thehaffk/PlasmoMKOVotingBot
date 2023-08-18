@@ -12,6 +12,7 @@ class MKOVoteBot(commands.Bot):
     """
     Base bot instance.
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

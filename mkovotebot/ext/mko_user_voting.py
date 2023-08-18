@@ -5,7 +5,7 @@ import disnake
 from disnake import ApplicationCommandInteraction
 from disnake.ext import commands
 
-from mkovotebot import settings, config
+from mkovotebot import config, settings
 from mkovotebot.ext.mko_voting import MKOVoting
 from mkovotebot.utils import models
 
@@ -18,8 +18,7 @@ class UserVoting(commands.Cog):
 
     @commands.default_member_permissions(manage_roles=True)
     @commands.slash_command(
-        name="mko-rcd",
-        guild_ids=[config.PlasmoRPGuild.id, config.TestServer.id]
+        name="mko-rcd", guild_ids=[config.PlasmoRPGuild.id, config.TestServer.id]
     )
     async def mko_rcd(self, inter: ApplicationCommandInteraction, user: disnake.Member):
         """
@@ -56,7 +55,7 @@ class UserVoting(commands.Cog):
         ):
             return await inter.edit_original_message("https://imgur.com/4hgetSA")
 
-        cooldown, _  = await models.Cooldown.objects.get_or_create(
+        cooldown, _ = await models.Cooldown.objects.get_or_create(
             voter_id=inter.author.id, defaults={"mko_cooldown": 0}
         )
         if cooldown.mko_cooldown > datetime.utcnow().timestamp():
@@ -95,7 +94,7 @@ class UserVoting(commands.Cog):
                 title="Голос успешно изменен",
                 description=f"Вы проголосовали за {candidate.mention}\n\n"
                 f"Переголосовать через `/vote` можно "
-                            f"<t:{int(datetime.utcnow().timestamp() + settings.Config.vote_cooldown * 3600)}:R> ",
+                f"<t:{int(datetime.utcnow().timestamp() + settings.Config.vote_cooldown * 3600)}:R> ",
                 color=disnake.Color.dark_green(),
             )
         )
@@ -104,8 +103,10 @@ class UserVoting(commands.Cog):
         await models.Cooldown.objects.update_or_create(
             voter_id=inter.author.id,
             defaults={
-                "mko_cooldown": int(datetime.utcnow().timestamp() + settings.Config.vote_cooldown * 3600),
-            }
+                "mko_cooldown": int(
+                    datetime.utcnow().timestamp() + settings.Config.vote_cooldown * 3600
+                ),
+            },
         )
 
     async def cog_load(self):

@@ -29,6 +29,7 @@ async def get_mko_candidates() -> List[Candidate]:
 
     return sorted(candidates, reverse=True, key=lambda i: i.votes_count)
 
+
 async def get_election_candidates() -> List[Candidate]:
     """
     Get list of all candidates in president elections
