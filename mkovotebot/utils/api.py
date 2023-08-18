@@ -1,7 +1,6 @@
 from dataclasses import dataclass
-
 from functools import lru_cache
-from typing import Union, Optional
+from typing import Optional, Union
 
 import aiohttp
 
@@ -38,9 +37,7 @@ async def _get_plasmo_userdata(
             if response.status != 200:
                 return None
             response_json = await response.json()
-            if (
-                not response_json.get("status", False)
-            ):
+            if not response_json.get("status", False):
                 return None
             data = response_json["data"]
 

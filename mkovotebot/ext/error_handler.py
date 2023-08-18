@@ -2,12 +2,8 @@ import logging
 
 import disnake
 from disnake.ext import commands
-from disnake.ext.commands.errors import (
-    MissingPermissions,
-    MissingRole,
-    NotOwner,
-    NoPrivateMessage,
-)
+from disnake.ext.commands.errors import (MissingPermissions, MissingRole,
+                                         NoPrivateMessage, NotOwner)
 
 from mkovotebot.config import PlasmoRPGuild
 
@@ -55,7 +51,7 @@ class ErrorHandler(commands.Cog):
                     description="Вам нужно быть "
                     "администратором бота для использования этой функции\n\n"
                     "Если вам нужно использовать эту функцию,"
-                                " обратитесь в тикеты Plasmo или Digital Drugs  Technologies",
+                    " обратитесь в тикеты Plasmo или Digital Drugs  Technologies",
                     color=disnake.Color.red(),
                 ),
                 ephemeral=True,

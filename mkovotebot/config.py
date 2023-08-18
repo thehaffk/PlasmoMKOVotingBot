@@ -27,9 +27,11 @@ class PlasmoRPGuild:
     announcement_channel_id = 844505711211446282
     low_priority_announcement_channel_id = 754644298720477264
 
+
 class MKOStructureGuild:
     id = 814490777526075433
     invite_url = "https://discord.gg/YwRDyBCAJD"
+
 
 class TestServer:
     """
@@ -47,8 +49,6 @@ class TestServer:
 
     announcement_channel_id = 969280776459935884
     low_priority_announcement_channel_id = 969291098348458004
-
-
 
 
 if DEBUG_VALUES:
